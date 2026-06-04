@@ -1,0 +1,19 @@
+packages:
+    - "."
+
+allowBuilds:
+    "@sentry/cli": true
+    better-sqlite3: true
+    esbuild: true
+    msgpackr-extract: true
+    msw: true
+    sharp: true
+    workerd: true
+
+# 配置包的最少发布时间，例如至少发布 7 天后才能使用，避免供应链攻击。
+minimumReleaseAge: 10080 # 7 天（以分钟为单位）
+
+# 配置排除的包，自己开发维护的包可以排除在外。
+minimumReleaseAgeExclude:
+    - "@shanjing-inc/wechat-node-sdk"
+    - "@shanjing/astro-full-stack-starter"

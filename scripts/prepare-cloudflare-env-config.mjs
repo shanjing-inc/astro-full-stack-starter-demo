@@ -24,9 +24,16 @@ function readJsonc(filePath) {
 
 const sourceConfig = readJsonc(sourceConfigPath);
 const generatedConfig = JSON.parse(readFileSync(generatedConfigPath, "utf8"));
+const deploymentEnvironments = Object.entries(sourceConfig.env ?? {}).filter(
+    ([environmentName]) => environmentName !== "dev"
+);
 
 if (!sourceConfig.env || Object.keys(sourceConfig.env).length === 0) {
     throw new Error("wrangler.jsonc does not define any Cloudflare environments.");
+}
+
+if (deploymentEnvironments.length === 0) {
+    throw new Error("wrangler.jsonc does not define any deployable Cloudflare environments.");
 }
 
 function mergeByKey(baseItems = [], overrideItems = [], key) {
@@ -48,6 +55,7 @@ function buildEnvironmentConfig(environmentName, environmentConfig) {
     const config = {
         ...generatedConfig,
         ...environmentConfig,
+        assets: generatedConfig.assets ?? environmentConfig.assets,
         vars: {
             ...generatedConfig.vars,
             ...environmentVars,
@@ -89,9 +97,8 @@ function buildEnvironmentConfig(environmentName, environmentConfig) {
     return outputPath;
 }
 
-const generatedFiles = Object.entries(sourceConfig.env).map(
-    ([environmentName, environmentConfig]) =>
-        buildEnvironmentConfig(environmentName, environmentConfig)
+const generatedFiles = deploymentEnvironments.map(([environmentName, environmentConfig]) =>
+    buildEnvironmentConfig(environmentName, environmentConfig)
 );
 
 console.log(
