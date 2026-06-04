@@ -5,6 +5,7 @@ import process from "node:process";
 
 const rootDir = process.cwd();
 const distDenoDir = path.join(rootDir, "dist/deno");
+const sentrySourceMapsDir = path.join(rootDir, "dist/sentry-sourcemaps");
 const sourceDir = path.join(rootDir, "src");
 const sentryCliPackage = "@sentry/cli@2.58.5";
 const requiredEnvNames = ["SENTRY_AUTH_TOKEN", "SENTRY_ORG", "SENTRY_PROJECT", "SENTRY_RELEASE"];
@@ -23,11 +24,14 @@ function readRequiredEnv(name) {
 
 async function assertDistReady() {
     await access(path.join(distDenoDir, "server/entry.mjs"));
-    await access(path.join(distDenoDir, "server/entry.mjs.map"));
     await access(path.join(distDenoDir, "queues/worker.mjs"));
-    await access(path.join(distDenoDir, "queues/worker.mjs.map"));
     await access(path.join(distDenoDir, "queues/scheduler.mjs"));
-    await access(path.join(distDenoDir, "queues/scheduler.mjs.map"));
+    await access(path.join(sentrySourceMapsDir, "server/entry.mjs"));
+    await access(path.join(sentrySourceMapsDir, "server/entry.mjs.map"));
+    await access(path.join(sentrySourceMapsDir, "queues/worker.mjs"));
+    await access(path.join(sentrySourceMapsDir, "queues/worker.mjs.map"));
+    await access(path.join(sentrySourceMapsDir, "queues/scheduler.mjs"));
+    await access(path.join(sentrySourceMapsDir, "queues/scheduler.mjs.map"));
     await access(sourceDir);
 }
 
@@ -83,7 +87,7 @@ async function uploadSourcemaps(env, dist, urlPrefix) {
         "--strip-common-prefix",
         "--validate",
         "--wait",
-        distDenoDir,
+        sentrySourceMapsDir,
     ]);
 }
 

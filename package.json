@@ -2,12 +2,13 @@
     "name": "deno-mysql-demo",
     "private": true,
     "type": "module",
-    "packageManager": "pnpm@10.32.1",
+    "packageManager": "pnpm@11.5.0",
     "engines": {
         "node": ">=24.0.0",
-        "pnpm": ">=10.32.1"
+        "pnpm": ">=11.5.0"
     },
     "scripts": {
+        "preinstall": "node ./scripts/enforce-package-manager.mjs",
         "codegen": "node ./scripts/export-graphql-schema.mjs && graphql-codegen --config codegen.yml",
         "queue:sync": "node ./scripts/generate-queue-manifest.mjs",
         "dev": "pnpm queue:sync && astro dev",
@@ -16,9 +17,11 @@
         "db:migrate": "drizzle-kit migrate",
         "db:push": "drizzle-kit push",
         "db:studio": "drizzle-kit studio",
-        "build": "pnpm queue:sync && node ./scripts/check-package-manager-artifacts.mjs && node ./scripts/check-deno-compat.mjs && astro build && node ./scripts/prepare-deno-deploy.mjs",
+        "build": "pnpm build:release",
+        "build:release": "node ./scripts/ensure-workspace-starter-build.mjs && pnpm queue:sync && node ./scripts/check-package-manager-artifacts.mjs && node ./scripts/check-deno-compat.mjs && astro build && node ./scripts/prepare-deno-deploy.mjs --profile=release",
+        "build:debug": "node ./scripts/ensure-workspace-starter-build.mjs && pnpm queue:sync && node ./scripts/check-package-manager-artifacts.mjs && node ./scripts/check-deno-compat.mjs && astro build && node ./scripts/prepare-deno-deploy.mjs --profile=debug",
         "sentry:sourcemaps": "node ./scripts/upload-sentry-sourcemaps.mjs",
-        "check": "pnpm queue:sync && node ./scripts/check-package-manager-artifacts.mjs && node ./scripts/check-deno-compat.mjs && pnpm lint:check && pnpm format:check && pnpm test && pnpm codegen && astro-check",
+        "check": "pnpm node ./scripts/check-package-manager-artifacts.mjs && node ./scripts/check-deno-compat.mjs && pnpm lint:check && pnpm format:check && pnpm test && pnpm codegen && astro-check",
         "sync": "astro sync",
         "lint:check": "eslint . --cache --cache-location node_modules/.cache/eslint-cache/.eslintcache",
         "lint:fix": "eslint . --cache --cache-location node_modules/.cache/eslint-cache/.eslintcache --fix",
@@ -44,7 +47,7 @@
         "@pothos/plugin-drizzle": "^0.17.1",
         "@sentry/astro": "^10.51.0",
         "@sentry/deno": "^10.51.0",
-        "@shanjing/astro-full-stack-starter": "0.7.0",
+        "@shanjing/astro-full-stack-starter": "0.8.0",
         "better-auth": "^1.6.9",
         "bullmq": "^5.73.5",
         "class-variance-authority": "^0.7.1",

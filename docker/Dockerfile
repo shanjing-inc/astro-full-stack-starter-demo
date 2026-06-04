@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # check=skip=SecretsUsedInArgOrEnv
-ARG BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/shanjing/node:24-bookworm-slim-pnpm10.32.1-deno2.7.12-pm26.0.14
+ARG BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/shanjing/node:24-bookworm-slim-pnpm11.5.0-deno2.7.12-pm26.0.14
 
 FROM ${BASE_IMAGE} AS build
 
@@ -83,8 +83,8 @@ RUN _SENTRY_UPLOAD_SOURCEMAPS="${SENTRY_UPLOAD_SOURCEMAPS:-$USER_SENTRY_UPLOAD_S
             echo "SENTRY_AUTH_TOKEN build arg is required when SENTRY_UPLOAD_SOURCEMAPS=1." >&2; \
             exit 1; \
         fi; \
-        if ! find dist/deno -name "*.map" -type f | grep -q .; then \
-            echo "No sourcemaps found under dist/deno." >&2; \
+        if ! find dist/sentry-sourcemaps -name "*.map" -type f | grep -q .; then \
+            echo "No sourcemaps found under dist/sentry-sourcemaps." >&2; \
             exit 1; \
         fi; \
         if [ "$_SENTRY_ALLOW_INSECURE_SSL" = "1" ]; then \
@@ -101,7 +101,7 @@ RUN _SENTRY_UPLOAD_SOURCEMAPS="${SENTRY_UPLOAD_SOURCEMAPS:-$USER_SENTRY_UPLOAD_S
         SENTRY_SERVER_SOURCE_URL_PREFIX="$_SENTRY_SERVER_SOURCE_URL_PREFIX" \
         SENTRY_QUEUE_SOURCE_URL_PREFIX="$_SENTRY_QUEUE_SOURCE_URL_PREFIX" \
         pnpm sentry:sourcemaps && \
-        find dist/deno/client -name "*.map" -type f -delete; \
+        rm -rf dist/sentry-sourcemaps; \
     fi
 
 FROM ${BASE_IMAGE} AS runner
