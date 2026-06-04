@@ -1,0 +1,123 @@
+---
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+
+import { InstallForm } from "@/components/super-admin/install-form";
+import { databaseProvider } from "@/db/client";
+import BaseLayout from "@/layouts/base-layout.astro";
+import { auth } from "@/lib/auth";
+import { appendAuthCookies } from "@shanjing/astro-full-stack-starter/super-admin";
+
+const db = databaseProvider.getDb();
+const user = databaseProvider.schema.user;
+
+let defaultEmail = "";
+let defaultName = "";
+let errorMessage = "";
+let fieldErrors = {
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+};
+
+async function hasAdminUser() {
+    const adminUsers = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.role, "admin"))
+        .limit(1);
+
+    return adminUsers.length > 0;
+}
+
+const installSchema = z
+    .object({
+        name: z.string().trim().min(1, "请输入管理员姓名。"),
+        email: z.email("请输入有效邮箱。").transform((email) => email.trim().toLowerCase()),
+        password: z.string().min(8, "密码至少需要 8 个字符。"),
+        confirmPassword: z.string(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+        message: "两次输入的密码不一致。",
+        path: ["confirmPassword"],
+    });
+
+if (await hasAdminUser()) {
+    return new Response(null, {
+        status: 303,
+        headers: {
+            location: "/super-admin",
+        },
+    });
+}
+
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+    const input = {
+        name: String(formData.get("name") ?? ""),
+        email: String(formData.get("email") ?? ""),
+        password: String(formData.get("password") ?? ""),
+        confirmPassword: String(formData.get("confirmPassword") ?? ""),
+    };
+    const result = installSchema.safeParse(input);
+
+    defaultName = input.name.trim();
+    defaultEmail = input.email.trim();
+
+    if (!result.success) {
+        const errors = z.flattenError(result.error).fieldErrors;
+
+        fieldErrors = {
+            name: errors.name?.[0] ?? "",
+            email: errors.email?.[0] ?? "",
+            password: errors.password?.[0] ?? "",
+            confirmPassword: errors.confirmPassword?.[0] ?? "",
+        };
+    } else if (await hasAdminUser()) {
+        return new Response(null, {
+            status: 303,
+            headers: {
+                location: "/super-admin",
+            },
+        });
+    } else {
+        try {
+            const authResponse = await auth.api.signUpEmail({
+                body: {
+                    name: result.data.name,
+                    email: result.data.email,
+                    password: result.data.password,
+                },
+                headers: Astro.request.headers,
+                asResponse: true,
+            });
+            const headers = new Headers();
+
+            await db.update(user).set({ role: "admin" }).where(eq(user.email, result.data.email));
+
+            appendAuthCookies(authResponse.headers, headers);
+            headers.set("location", "/super-admin");
+
+            return new Response(null, {
+                status: 303,
+                headers,
+            });
+        } catch {
+            errorMessage = "管理员账号创建失败，请检查邮箱和密码。";
+        }
+    }
+}
+---
+
+<BaseLayout title="Install Super Admin">
+    <section class="flex min-h-[calc(100vh-5rem)] items-center justify-center">
+        <InstallForm
+            className="w-full max-w-5xl"
+            defaultEmail={defaultEmail}
+            defaultName={defaultName}
+            errorMessage={errorMessage}
+            fieldErrors={fieldErrors}
+        />
+    </section>
+</BaseLayout>

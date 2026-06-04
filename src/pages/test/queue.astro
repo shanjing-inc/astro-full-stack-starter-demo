@@ -1,0 +1,357 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro";
+import { getActiveQueueNames, queueConfigs } from "@/queues/config";
+import { dispatchDynamicQueueTestJob } from "@/queues/jobs/dynamic-queue-test.job";
+import { createQueueExecutionStore } from "@/queues/runtime";
+import type { QueueName } from "@shanjing/astro-full-stack-starter/queue/core";
+
+const action = Astro.url.searchParams.get("action");
+const mode = Astro.url.searchParams.get("mode") ?? "success";
+const requestedAt = new Date().toISOString();
+let runtimeError: string | null = null;
+let records: Awaited<
+    ReturnType<NonNullable<ReturnType<typeof createQueueExecutionStore>["getRecent"]>>
+> = [];
+
+interface JobResult {
+    jobId: string | null;
+    error: string | null;
+    ok: boolean;
+    queueName: QueueName;
+}
+
+interface QueueTone {
+    button: string;
+    card: string;
+    label: string;
+    result: string;
+    resultMeta: string;
+}
+
+const queueTones: Partial<Record<QueueName, QueueTone>> & { fallback: QueueTone } = {
+    critical: {
+        button: "border border-destructive/30 bg-destructive/10 text-destructive transition hover:bg-destructive/15",
+        card: "border bg-card text-card-foreground shadow-sm",
+        label: "text-destructive",
+        result: "border border-destructive/20 bg-destructive/10 text-foreground",
+        resultMeta: "text-muted-foreground",
+    },
+    default: {
+        button: "border border-primary/30 bg-primary/10 text-primary transition hover:bg-primary/15",
+        card: "border bg-card text-card-foreground shadow-sm",
+        label: "text-primary",
+        result: "border border-primary/20 bg-primary/10 text-foreground",
+        resultMeta: "text-muted-foreground",
+    },
+    fallback: {
+        button: "border border-cyan-500/30 bg-cyan-500/10 text-cyan-700 transition hover:bg-cyan-500/15 dark:text-cyan-200",
+        card: "border bg-card text-card-foreground shadow-sm",
+        label: "text-cyan-700 dark:text-cyan-200",
+        result: "border border-cyan-500/20 bg-cyan-500/10 text-foreground",
+        resultMeta: "text-muted-foreground",
+    },
+};
+const defaultSuccessButtonClass = queueTones.default?.button ?? queueTones.fallback.button;
+
+function getQueueTone(queueName: QueueName): QueueTone {
+    return queueTones[queueName] ?? queueTones.fallback;
+}
+
+function getRecordQueue(record: (typeof records)[number]) {
+    const payload = record.payload;
+
+    return payload && typeof payload === "object" && "queue" in payload
+        ? String((payload as { queue: unknown }).queue)
+        : record.queueName;
+}
+
+const activeQueueNames = getActiveQueueNames();
+const jobResults: JobResult[] = [];
+
+try {
+    if (action) {
+        const requestedQueueNames = action
+            .split(",")
+            .map((queueName) => queueName.trim())
+            .filter(Boolean);
+
+        for (const queueName of requestedQueueNames) {
+            if (activeQueueNames.includes(queueName as QueueName)) {
+                const result = await dispatchDynamicQueueTestJob(queueName as QueueName, {
+                    queue: queueName,
+                    mode: mode === "fail-once" || mode === "always-fail" ? mode : "success",
+                    requestedAt,
+                    source: "queue-test-page",
+                });
+
+                jobResults.push({
+                    jobId: result.ok ? result.jobId : null,
+                    error: result.ok ? null : result.message,
+                    ok: result.ok,
+                    queueName: queueName as QueueName,
+                });
+            }
+        }
+    }
+
+    const executionStore = createQueueExecutionStore();
+
+    try {
+        records = executionStore.getRecent ? await executionStore.getRecent(20) : [];
+    } finally {
+        executionStore.close();
+    }
+} catch (error) {
+    runtimeError = error instanceof Error ? error.message : "BullMQ 队列运行时初始化失败。";
+}
+
+const statusLabels = {
+    completed: "completed",
+    failed: "failed",
+    processing: "processing",
+    queued: "queued",
+    retrying: "retrying",
+};
+
+const modeLabels = {
+    "always-fail": "持续失败",
+    "fail-once": "失败一次",
+    success: "成功",
+};
+---
+
+<BaseLayout title="Queue Test">
+    <section class="space-y-8">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                Queue Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                BullMQ 队列派发测试
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面由手动按钮触发任意队列。提交后可观察
+                <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground"
+                    >pnpm queue:worker</code
+                >
+                的消费日志。队列配置来源于
+                <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground"
+                    >config.json</code
+                >
+                。验证 BullMQ Board 的 Retry → Completed 流程时，请使用“失败一次”按钮。
+            </p>
+        </div>
+
+        <section class="grid gap-4 lg:grid-cols-3">
+            {
+                queueConfigs.map((config) => {
+                    const tone = getQueueTone(config.name);
+
+                    return (
+                        <form class={`rounded-xl p-6 ${tone.card}`} method="get">
+                            <input name="action" type="hidden" value={config.name} />
+                            <p
+                                class={`text-sm font-medium tracking-[0.3em] uppercase ${tone.label}`}
+                            >
+                                {config.name}
+                            </p>
+                            <h2 class="mt-4 text-2xl font-semibold">派发 {config.description}</h2>
+                            <p class="mt-3 text-sm/7 text-muted-foreground">
+                                写入队列：
+                                <code class="rounded-sm bg-muted px-2 py-1 text-xs text-foreground">
+                                    {config.name}
+                                </code>
+                            </p>
+                            <div class="mt-6 flex flex-wrap gap-3">
+                                <button
+                                    class={`rounded-lg px-4 py-2 text-sm font-medium ${defaultSuccessButtonClass}`}
+                                    name="mode"
+                                    type="submit"
+                                    value="success"
+                                >
+                                    触发成功任务
+                                </button>
+                                <button
+                                    class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-500/15 dark:text-amber-200"
+                                    name="mode"
+                                    type="submit"
+                                    value="fail-once"
+                                >
+                                    失败一次（可 Retry）
+                                </button>
+                                <button
+                                    class="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive transition hover:bg-destructive/15"
+                                    name="mode"
+                                    type="submit"
+                                    value="always-fail"
+                                >
+                                    持续失败
+                                </button>
+                            </div>
+                        </form>
+                    );
+                })
+            }
+        </section>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 class="text-2xl font-semibold">当前请求结果</h2>
+                <a
+                    class="inline-flex w-fit items-center rounded-lg border border-emerald-600 bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition hover:border-emerald-700 hover:bg-emerald-700"
+                    data-preserve-scroll="queue-status-refresh"
+                    href="/test/queue"
+                >
+                    刷新执行状态
+                </a>
+            </div>
+            <p class="mt-2 text-sm/7 text-muted-foreground">
+                最近一次动作：
+                <code class="ml-2 rounded-sm bg-muted px-2 py-1 text-xs text-foreground">
+                    {action ?? "none"}
+                </code>
+                <code class="ml-2 rounded-sm bg-muted px-2 py-1 text-xs text-foreground">
+                    mode: {modeLabels[mode as keyof typeof modeLabels] ?? mode}
+                </code>
+                <span class="ml-3">请求时间：{requestedAt}</span>
+            </p>
+
+            {
+                runtimeError ? (
+                    <div class="mt-6 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                        {runtimeError}
+                    </div>
+                ) : jobResults.length > 0 ? (
+                    <div class="mt-6 grid gap-4 lg:grid-cols-2">
+                        {jobResults.map((result) => {
+                            const config = queueConfigs.find(
+                                (queueConfig) => queueConfig.name === result.queueName
+                            );
+                            const tone = getQueueTone(result.queueName);
+
+                            return (
+                                <div
+                                    class={
+                                        result.ok
+                                            ? `rounded-xl p-4 text-sm ${tone.result}`
+                                            : "rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-foreground"
+                                    }
+                                >
+                                    <p class={result.ok ? "font-medium" : ""}>
+                                        {config?.description || result.queueName} 队列任务
+                                        {result.ok ? "已写入" : "写入失败"}。
+                                    </p>
+                                    {result.ok && result.jobId && (
+                                        <p class="mt-2 break-all">
+                                            job id:
+                                            <code class="ml-2 rounded-sm bg-muted px-2 py-1 text-xs text-foreground">
+                                                {result.jobId}
+                                            </code>
+                                        </p>
+                                    )}
+                                    {result.ok && (
+                                        <p class={`mt-2 ${tone.resultMeta}`}>
+                                            queue: {config?.name ?? result.queueName}
+                                        </p>
+                                    )}
+                                    {result.ok && (
+                                        <p class={`mt-2 ${tone.resultMeta}`}>mode: {mode}</p>
+                                    )}
+                                    {!result.ok && result.error && (
+                                        <p class="mt-2 text-amber-800 dark:text-amber-200">
+                                            {result.error}
+                                        </p>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <div class="mt-6 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        <p>尚未派发任何队列任务。</p>
+                        <p class="mt-2 leading-7">
+                            点击上面的按钮后，这里会显示 job id 或错误信息。
+                        </p>
+                    </div>
+                )
+            }
+        </section>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <h2 class="text-2xl font-semibold">最近执行记录</h2>
+            <p class="mt-2 text-sm/7 text-muted-foreground">
+                刷新页面可查看 BullMQ worker 写回 Redis 的最新状态。
+            </p>
+
+            {
+                records.length > 0 ? (
+                    <div class="mt-6 overflow-x-auto rounded-xl border">
+                        <table class="min-w-full text-left text-sm text-foreground">
+                            <thead class="bg-muted/50 text-muted-foreground">
+                                <tr class="border-b">
+                                    <th class="p-3 font-medium">queue</th>
+                                    <th class="p-3 font-medium">job id</th>
+                                    <th class="p-3 font-medium">mode</th>
+                                    <th class="p-3 font-medium">status</th>
+                                    <th class="p-3 font-medium">attempt</th>
+                                    <th class="p-3 font-medium">requestedAt</th>
+                                    <th class="p-3 font-medium">processedAt</th>
+                                    <th class="p-3 font-medium">error</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {records.map((record) => (
+                                    <tr class="border-b bg-card last:border-b-0">
+                                        <td class="p-3">{getRecordQueue(record)}</td>
+                                        <td class="max-w-64 p-3 break-all">{record.jobId}</td>
+                                        <td class="p-3">{record.mode ?? "-"}</td>
+                                        <td class="p-3">{statusLabels[record.status]}</td>
+                                        <td class="p-3">{record.attempt}</td>
+                                        <td class="p-3">{record.requestedAt}</td>
+                                        <td class="p-3">{record.processedAt ?? "-"}</td>
+                                        <td class="max-w-80 p-3 wrap-break-word">
+                                            {record.error ?? "-"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div class="mt-6 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        暂无执行记录。投递任务后会先写入 queued 记录。
+                    </div>
+                )
+            }
+        </section>
+    </section>
+
+    <script>
+        const scrollStorageKey = "queue-test:scroll-y";
+        const refreshLink = document.querySelector<HTMLAnchorElement>(
+            '[data-preserve-scroll="queue-status-refresh"]'
+        );
+
+        refreshLink?.addEventListener("click", () => {
+            sessionStorage.setItem(scrollStorageKey, String(window.scrollY));
+        });
+
+        const savedScroll = sessionStorage.getItem(scrollStorageKey);
+
+        if (savedScroll) {
+            sessionStorage.removeItem(scrollStorageKey);
+
+            const savedScrollY = Number(savedScroll);
+
+            if (Number.isFinite(savedScrollY)) {
+                window.scrollTo({ top: savedScrollY, behavior: "instant" });
+            }
+        }
+    </script>
+</BaseLayout>

@@ -1,0 +1,196 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro";
+
+const sseEndpointPath = "/api/sse/public";
+---
+
+<BaseLayout title="SSE Test">
+    <section class="space-y-8" data-endpoint={sseEndpointPath} id="sse-test-page">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                SSE Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">SSE 连通性测试</h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                当前页面连接
+                <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground">
+                    {sseEndpointPath}
+                </code>
+                ，用于验证 EventSource、ready 事件和服务端主动推送；连接使用 heartbeat comment 保活，不在事件日志展示。
+            </p>
+        </div>
+
+        <section class="grid gap-6 lg:grid-cols-[0.8fr_1.2fr]">
+            <aside class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    connection
+                </p>
+                <h2 class="mt-3 text-2xl font-semibold">连接状态</h2>
+
+                <div class="mt-6 grid gap-3 text-sm text-muted-foreground">
+                    <p>
+                        Endpoint：
+                        <span class="ml-2 font-medium break-all text-foreground">
+                            {sseEndpointPath}
+                        </span>
+                    </p>
+                    <p>
+                        状态：
+                        <span class="ml-2 font-medium text-foreground" id="sse-status">idle</span>
+                    </p>
+                </div>
+
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button
+                        class="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                        id="connect-sse"
+                        type="button"
+                    >
+                        连接
+                    </button>
+                    <button
+                        class="rounded-lg border bg-background px-5 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled
+                        id="disconnect-sse"
+                        type="button"
+                    >
+                        断开
+                    </button>
+                </div>
+            </aside>
+
+            <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <p
+                            class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                        >
+                            events
+                        </p>
+                        <h2 class="mt-3 text-2xl font-semibold">事件日志</h2>
+                    </div>
+                    <button
+                        class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                        id="clear-sse-log"
+                        type="button"
+                    >
+                        清空日志
+                    </button>
+                </div>
+
+                <pre
+                    class="mt-6 min-h-120 overflow-x-auto rounded-xl border bg-muted/40 p-4 text-sm/7 text-foreground"
+                    id="sse-log">尚未连接。</pre>
+            </section>
+        </section>
+    </section>
+</BaseLayout>
+
+<script>
+    const pageRoot = document.querySelector("#sse-test-page") as HTMLElement | null;
+    const connectButton = document.querySelector("#connect-sse") as HTMLButtonElement | null;
+    const disconnectButton = document.querySelector("#disconnect-sse") as HTMLButtonElement | null;
+    const clearButton = document.querySelector("#clear-sse-log") as HTMLButtonElement | null;
+    const statusLabel = document.querySelector("#sse-status") as HTMLElement | null;
+    const logOutput = document.querySelector("#sse-log") as HTMLPreElement | null;
+    const endpoint = pageRoot?.dataset.endpoint ?? "/api/sse/public";
+    const logEntries: string[] = [];
+    let eventSource: EventSource | null = null;
+    let serverFinished = false;
+
+    function setStatus(status: string) {
+        if (statusLabel) {
+            statusLabel.textContent = status;
+        }
+    }
+
+    function renderLog() {
+        if (logOutput) {
+            logOutput.textContent = logEntries.length > 0 ? logEntries.join("\n") : "尚未连接。";
+        }
+    }
+
+    function appendLog(type: string, payload: unknown) {
+        logEntries.unshift(
+            JSON.stringify(
+                {
+                    payload,
+                    receivedAt: new Date().toISOString(),
+                    type,
+                },
+                null,
+                2
+            )
+        );
+        renderLog();
+    }
+
+    function setConnected(connected: boolean) {
+        if (connectButton) {
+            connectButton.disabled = connected;
+        }
+
+        if (disconnectButton) {
+            disconnectButton.disabled = !connected;
+        }
+    }
+
+    function closeSource() {
+        eventSource?.close();
+        eventSource = null;
+        setConnected(false);
+        setStatus("closed");
+    }
+
+    connectButton?.addEventListener("click", () => {
+        closeSource();
+        serverFinished = false;
+        eventSource = new EventSource(endpoint);
+        setStatus("connecting");
+        setConnected(true);
+        appendLog("connect", {
+            endpoint,
+        });
+
+        eventSource.addEventListener("open", () => {
+            setStatus("open");
+        });
+
+        eventSource.addEventListener("ready", (event) => {
+            appendLog("ready", JSON.parse(event.data));
+        });
+
+        eventSource.addEventListener("serverPush", (event) => {
+            appendLog("serverPush", JSON.parse(event.data));
+        });
+
+        eventSource.addEventListener("done", (event) => {
+            serverFinished = true;
+            appendLog("done", JSON.parse(event.data));
+            closeSource();
+        });
+
+        eventSource.addEventListener("error", () => {
+            if (serverFinished) {
+                closeSource();
+                return;
+            }
+
+            setStatus("reconnecting");
+            setConnected(true);
+        });
+    });
+
+    disconnectButton?.addEventListener("click", closeSource);
+
+    clearButton?.addEventListener("click", () => {
+        logEntries.splice(0, logEntries.length);
+        renderLog();
+    });
+</script>

@@ -1,0 +1,16 @@
+.git
+.gitignore
+.astro
+.cache
+.DS_Store
+dist
+node_modules
+coverage
+tmp
+*.log
+.env
+.env.*
+!.env.example
+.npmrc
+test-results
+playwright-report

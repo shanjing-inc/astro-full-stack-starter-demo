@@ -1,0 +1,553 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro";
+
+type WebSocketEndpointKey = "public" | "member" | "super-admin";
+
+interface WebSocketEndpointOption {
+    label: string;
+    path: string;
+    value: WebSocketEndpointKey;
+}
+
+const DEFAULT_ENDPOINT = "public" satisfies WebSocketEndpointKey;
+const ENDPOINT_OPTIONS: WebSocketEndpointOption[] = [
+    {
+        label: "Public",
+        path: "/api/websocket/public",
+        value: "public",
+    },
+    {
+        label: "Member",
+        path: "/api/websocket/member",
+        value: "member",
+    },
+    {
+        label: "Super Admin",
+        path: "/api/websocket/super-admin",
+        value: "super-admin",
+    },
+];
+const defaultWebSocketEndpoint =
+    ENDPOINT_OPTIONS.find((option) => option.value === DEFAULT_ENDPOINT) ?? ENDPOINT_OPTIONS[0];
+---
+
+<BaseLayout title="WebSocket Test">
+    <section
+        class="space-y-8"
+        data-default-endpoint={DEFAULT_ENDPOINT}
+        data-endpoints={JSON.stringify(ENDPOINT_OPTIONS)}
+        id="websocket-test-page"
+    >
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                WebSocket Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                WebSocket 连通性测试
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面默认连接
+                <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground">
+                    {defaultWebSocketEndpoint.path}
+                </code>
+                ，可以测试 dev 环境下的 Node WebSocket upgrade 和 Deno preview 下的原生 WebSocket upgrade。
+            </p>
+        </div>
+
+        <section class="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
+            <aside class="space-y-6">
+                <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                        connection
+                    </p>
+                    <h2 class="mt-3 text-2xl font-semibold">连接状态</h2>
+
+                    <div class="mt-6 grid gap-3 text-sm text-muted-foreground">
+                        <label class="grid gap-2">
+                            <span>Current endpoint</span>
+                            <select
+                                class="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                                id="websocket-endpoint"
+                            >
+                                {
+                                    ENDPOINT_OPTIONS.map((option) => (
+                                        <option value={option.value}>{option.path}</option>
+                                    ))
+                                }
+                            </select>
+                        </label>
+                        <p>
+                            状态：
+                            <span class="ml-2 font-medium text-foreground" id="websocket-status">
+                                idle
+                            </span>
+                        </p>
+                    </div>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button
+                            class="rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                            id="connect-websocket"
+                            type="button"
+                        >
+                            连接
+                        </button>
+                        <button
+                            class="rounded-lg border bg-background px-5 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled
+                            id="disconnect-websocket"
+                            type="button"
+                        >
+                            断开
+                        </button>
+                    </div>
+                </section>
+
+                <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                        presets
+                    </p>
+                    <h2 class="mt-3 text-2xl font-semibold">预设消息</h2>
+
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button
+                            class="rounded-lg bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground transition hover:bg-secondary/80 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled
+                            id="send-ping"
+                            type="button"
+                        >
+                            发送 ping
+                        </button>
+                        <button
+                            class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled
+                            id="send-echo"
+                            type="button"
+                        >
+                            发送 echo
+                        </button>
+                        <button
+                            class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled
+                            id="send-server-push-demo"
+                            type="button"
+                        >
+                            测试主动推送
+                        </button>
+                    </div>
+                </section>
+
+                <form
+                    class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm"
+                    id="websocket-message-form"
+                >
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p
+                                class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                            >
+                                request
+                            </p>
+                            <h2 class="mt-3 text-2xl font-semibold">自定义消息</h2>
+                        </div>
+                        <button
+                            class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                            id="reset-message"
+                            type="button"
+                        >
+                            重置
+                        </button>
+                    </div>
+
+                    <label class="mt-6 grid gap-2">
+                        <span class="text-sm text-muted-foreground">Message JSON</span>
+                        <textarea
+                            class="min-h-52 rounded-xl border border-input bg-background p-4 font-mono text-sm/7 text-foreground transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                            id="websocket-message"
+                            spellcheck="false"></textarea>
+                    </label>
+
+                    <button
+                        class="mt-6 rounded-lg bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled
+                        id="send-custom-message"
+                        type="submit"
+                    >
+                        发送消息
+                    </button>
+                </form>
+            </aside>
+
+            <section>
+                <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p
+                                class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                            >
+                                events
+                            </p>
+                            <h2 class="mt-3 text-2xl font-semibold">事件日志</h2>
+                        </div>
+                        <button
+                            class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                            id="clear-websocket-log"
+                            type="button"
+                        >
+                            清空日志
+                        </button>
+                    </div>
+
+                    <pre
+                        class="mt-6 min-h-152 overflow-x-auto rounded-xl border bg-muted/40 p-4 text-sm/7 text-foreground"
+                        id="websocket-log">尚未连接。</pre>
+                </section>
+            </section>
+        </section>
+    </section>
+</BaseLayout>
+
+<script>
+    type WebSocketEndpointKeyClient = "public" | "member" | "super-admin";
+
+    interface WebSocketEndpointOptionClient {
+        label: string;
+        path: string;
+        value: WebSocketEndpointKeyClient;
+    }
+
+    const pageRoot = document.querySelector("#websocket-test-page") as HTMLElement | null;
+    const clearLogButton = document.querySelector(
+        "#clear-websocket-log"
+    ) as HTMLButtonElement | null;
+    const connectButton = document.querySelector("#connect-websocket") as HTMLButtonElement | null;
+    const disconnectButton = document.querySelector(
+        "#disconnect-websocket"
+    ) as HTMLButtonElement | null;
+    const endpointSelect = document.querySelector(
+        "#websocket-endpoint"
+    ) as HTMLSelectElement | null;
+    const messageForm = document.querySelector("#websocket-message-form") as HTMLFormElement | null;
+    const messageTextarea = document.querySelector(
+        "#websocket-message"
+    ) as HTMLTextAreaElement | null;
+    const resetMessageButton = document.querySelector("#reset-message") as HTMLButtonElement | null;
+    const sendCustomButton = document.querySelector(
+        "#send-custom-message"
+    ) as HTMLButtonElement | null;
+    const sendEchoButton = document.querySelector("#send-echo") as HTMLButtonElement | null;
+    const sendPingButton = document.querySelector("#send-ping") as HTMLButtonElement | null;
+    const sendServerPushDemoButton = document.querySelector(
+        "#send-server-push-demo"
+    ) as HTMLButtonElement | null;
+    const statusText = document.querySelector("#websocket-status") as HTMLElement | null;
+    const websocketLog = document.querySelector("#websocket-log") as HTMLElement | null;
+
+    if (
+        !pageRoot ||
+        !clearLogButton ||
+        !connectButton ||
+        !disconnectButton ||
+        !endpointSelect ||
+        !messageForm ||
+        !messageTextarea ||
+        !resetMessageButton ||
+        !sendCustomButton ||
+        !sendEchoButton ||
+        !sendPingButton ||
+        !sendServerPushDemoButton ||
+        !statusText ||
+        !websocketLog
+    ) {
+        throw new Error("WebSocket test page initialization failed.");
+    }
+
+    const connectAction = connectButton;
+    const customMessageAction = sendCustomButton;
+    const disconnectAction = disconnectButton;
+    const echoAction = sendEchoButton;
+    const endpointPicker = endpointSelect;
+    const logPanel = websocketLog;
+    const messageEditor = messageTextarea;
+    const messageFormElement = messageForm;
+    const pingAction = sendPingButton;
+    const resetMessageAction = resetMessageButton;
+    const serverPushDemoAction = sendServerPushDemoButton;
+    const statusIndicator = statusText;
+    const defaultEndpoint = (pageRoot.dataset.defaultEndpoint ??
+        "public") as WebSocketEndpointKeyClient;
+    const endpointOptions = JSON.parse(
+        pageRoot.dataset.endpoints ?? "[]"
+    ) as WebSocketEndpointOptionClient[];
+    let connectionTimedOut = false;
+    let connectionTimeoutId: number | undefined;
+    let connectionOpened = false;
+    let connectionDiagnosticStarted = false;
+    let expectedClose = false;
+    let socket: WebSocket | null = null;
+
+    function createWebSocketUrl(path: string) {
+        return `${location.protocol === "https:" ? "wss:" : "ws:"}//${location.host}${path}`;
+    }
+
+    function getEndpointPath(endpointKey: WebSocketEndpointKeyClient) {
+        return (
+            endpointOptions.find((option) => option.value === endpointKey)?.path ??
+            "/api/websocket/public"
+        );
+    }
+
+    function syncEndpointOptionLabels() {
+        for (const optionElement of endpointPicker.options) {
+            const endpointKey = optionElement.value as WebSocketEndpointKeyClient;
+            const path = getEndpointPath(endpointKey);
+
+            optionElement.textContent = createWebSocketUrl(path);
+        }
+    }
+
+    function syncEndpoint(endpointKey: WebSocketEndpointKeyClient) {
+        endpointPicker.value = endpointKey;
+    }
+
+    function createDefaultMessage() {
+        return JSON.stringify(
+            {
+                payload: {
+                    message: "Hello WebSocket",
+                },
+                type: "echo",
+            },
+            null,
+            4
+        );
+    }
+
+    function appendLog(label: string, value: unknown) {
+        const logText = logPanel.textContent ?? "";
+        const currentText = ["尚未连接。", "日志已清空。"].includes(logText) ? "" : logText;
+        const nextEntry = `[${new Date().toLocaleTimeString()}] ${label}\n${
+            typeof value === "string" ? value : JSON.stringify(value, null, 4)
+        }`;
+
+        logPanel.textContent = currentText ? `${nextEntry}\n\n${currentText}` : nextEntry;
+    }
+
+    function setConnectedState(connected: boolean) {
+        connectAction.disabled = connected;
+        disconnectAction.disabled = !connected;
+        customMessageAction.disabled = !connected;
+        echoAction.disabled = !connected;
+        pingAction.disabled = !connected;
+        serverPushDemoAction.disabled = !connected;
+    }
+
+    function clearConnectionTimeout() {
+        if (connectionTimeoutId === undefined) {
+            return;
+        }
+
+        window.clearTimeout(connectionTimeoutId);
+        connectionTimeoutId = undefined;
+    }
+
+    function startConnectionTimeout() {
+        clearConnectionTimeout();
+        connectionTimeoutId = window.setTimeout(() => {
+            if (!socket || socket.readyState !== WebSocket.CONNECTING) {
+                return;
+            }
+
+            connectionTimedOut = true;
+            expectedClose = true;
+            statusIndicator.textContent = "timeout";
+            appendLog(
+                "error",
+                "WebSocket connection timed out. If this is astro dev after a config/package change, restart pnpm dev."
+            );
+            socket.close();
+            setConnectedState(false);
+        }, 8000);
+    }
+
+    function sendMessage(message: unknown) {
+        if (!socket || socket.readyState !== WebSocket.OPEN) {
+            appendLog("error", "WebSocket is not connected.");
+            return;
+        }
+
+        const serializedMessage = typeof message === "string" ? message : JSON.stringify(message);
+
+        socket.send(serializedMessage);
+        appendLog("sent", serializedMessage);
+    }
+
+    async function diagnoseWebSocketFailure(endpointPath: string, endpointUrl: string) {
+        if (connectionOpened || connectionDiagnosticStarted) {
+            return;
+        }
+
+        connectionDiagnosticStarted = true;
+
+        try {
+            const response = await fetch(endpointPath, {
+                cache: "no-store",
+                credentials: "include",
+            });
+            const bodyText = (await response.text()).trim();
+
+            appendLog("diagnostic", {
+                endpoint: endpointUrl,
+                message: bodyText || "-",
+                status: `${response.status} ${response.statusText || ""}`.trim(),
+            });
+        } catch (error) {
+            appendLog("diagnostic", {
+                endpoint: endpointUrl,
+                message: error instanceof Error ? error.message : "WebSocket diagnostic failed.",
+                status: "failed",
+            });
+        }
+    }
+
+    function connectWebSocket() {
+        if (socket && socket.readyState !== WebSocket.CLOSED) {
+            return;
+        }
+
+        const endpointPath = getEndpointPath(endpointPicker.value as WebSocketEndpointKeyClient);
+        const nextWebSocketUrl = createWebSocketUrl(endpointPath);
+
+        connectionDiagnosticStarted = false;
+        connectionOpened = false;
+        expectedClose = false;
+        statusIndicator.textContent = "connecting";
+        socket = new WebSocket(nextWebSocketUrl);
+        connectAction.disabled = true;
+        disconnectAction.disabled = false;
+        startConnectionTimeout();
+
+        socket.addEventListener("open", () => {
+            clearConnectionTimeout();
+            connectionTimedOut = false;
+            connectionOpened = true;
+            statusIndicator.textContent = "connected";
+            setConnectedState(true);
+            appendLog("open", nextWebSocketUrl);
+        });
+
+        socket.addEventListener("message", (event) => {
+            try {
+                appendLog("received", JSON.parse(event.data));
+            } catch {
+                appendLog("received", String(event.data));
+            }
+        });
+
+        socket.addEventListener("close", (event) => {
+            clearConnectionTimeout();
+            statusIndicator.textContent = connectionTimedOut ? "timeout" : "closed";
+            setConnectedState(false);
+            appendLog("close", {
+                code: event.code,
+                reason: event.reason || "-",
+                wasClean: event.wasClean,
+            });
+
+            if (!connectionOpened && event.code === 1006 && !connectionTimedOut && !expectedClose) {
+                void diagnoseWebSocketFailure(endpointPath, nextWebSocketUrl);
+            }
+
+            expectedClose = false;
+            connectionTimedOut = false;
+        });
+
+        socket.addEventListener("error", () => {
+            clearConnectionTimeout();
+            statusIndicator.textContent = "error";
+            setConnectedState(false);
+            appendLog("error", "WebSocket connection error.");
+
+            if (!connectionOpened && !connectionTimedOut && !expectedClose) {
+                void diagnoseWebSocketFailure(endpointPath, nextWebSocketUrl);
+            }
+        });
+    }
+
+    endpointPicker.addEventListener("change", () => {
+        const endpoint = endpointPicker.value as WebSocketEndpointKeyClient;
+
+        if (socket && socket.readyState !== WebSocket.CLOSED) {
+            appendLog("endpoint", `Switching endpoint to ${getEndpointPath(endpoint)}.`);
+            expectedClose = true;
+            socket.close(1000, "Endpoint changed.");
+        }
+
+        syncEndpoint(endpoint);
+    });
+
+    connectAction.addEventListener("click", () => {
+        connectWebSocket();
+    });
+
+    disconnectAction.addEventListener("click", () => {
+        expectedClose = true;
+        socket?.close();
+    });
+
+    pingAction.addEventListener("click", () => {
+        sendMessage({
+            payload: {
+                timestamp: Date.now(),
+            },
+            type: "ping",
+        });
+    });
+
+    echoAction.addEventListener("click", () => {
+        sendMessage({
+            payload: {
+                message: "Hello WebSocket",
+            },
+            type: "echo",
+        });
+    });
+
+    serverPushDemoAction.addEventListener("click", () => {
+        sendMessage({
+            payload: {
+                message: "服务端主动推送测试",
+            },
+            type: "serverPushDemo",
+        });
+    });
+
+    resetMessageAction.addEventListener("click", () => {
+        messageEditor.value = createDefaultMessage();
+    });
+
+    clearLogButton.addEventListener("click", () => {
+        logPanel.textContent = "日志已清空。";
+    });
+
+    messageFormElement.addEventListener("submit", (event) => {
+        event.preventDefault();
+
+        try {
+            sendMessage(JSON.parse(messageEditor.value));
+        } catch {
+            appendLog("error", "Message JSON 解析失败，请检查格式。");
+        }
+    });
+
+    messageEditor.value = createDefaultMessage();
+    syncEndpointOptionLabels();
+    syncEndpoint(defaultEndpoint);
+    setConnectedState(false);
+</script>

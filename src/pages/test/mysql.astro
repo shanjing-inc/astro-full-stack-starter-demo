@@ -1,0 +1,177 @@
+---
+import type { RowDataPacket } from "mysql2";
+
+import { getDb, getMysqlPool } from "@/db/client";
+import { shop } from "@/db/schemas";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+interface ConnectionSummary extends RowDataPacket {
+    connected: number;
+    currentUser: string | null;
+    databaseName: string | null;
+    serverTime: Date | string;
+}
+
+let connectionError: string | null = null;
+let connectionSummary: ConnectionSummary | null = null;
+let shopError: string | null = null;
+let shopRows: Array<typeof shop.$inferSelect> = [];
+
+try {
+    const mysqlPool = getMysqlPool();
+    const [rows] = await mysqlPool.query<ConnectionSummary[]>(
+        "select 1 as connected, current_user() as currentUser, database() as databaseName, now() as serverTime"
+    );
+
+    connectionSummary = rows[0] ?? null;
+} catch (error) {
+    connectionError = error instanceof Error ? error.message : "MySQL 原生连接测试失败。";
+}
+
+try {
+    const db = getDb();
+    shopRows = await db.select().from(shop).orderBy(shop.id).limit(5);
+} catch (error) {
+    shopError = error instanceof Error ? error.message : "Drizzle 查询测试失败。";
+}
+---
+
+<BaseLayout title="MySQL Test">
+    <section class="space-y-8">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                MySQL Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                MySQL 与 Drizzle 连通性测试
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面会先用 <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground"
+                    >mysql2</code
+                >
+                直接探测数据库连接，再用 Drizzle 尝试读取
+                <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground">shop</code>
+                表前 5 条记录。这样可以同时确认"连接已通"和"schema 已可用"。
+            </p>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    mysql2
+                </p>
+                {
+                    connectionSummary ? (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                连接状态：
+                                <span class="ml-2 font-medium text-foreground">
+                                    {connectionSummary.connected}
+                                </span>
+                            </p>
+                            <p class="break-all">
+                                当前用户：
+                                <span class="ml-2 text-foreground">
+                                    {connectionSummary.currentUser ?? "-"}
+                                </span>
+                            </p>
+                            <p class="break-all">
+                                当前数据库：
+                                <span class="ml-2 text-foreground">
+                                    {connectionSummary.databaseName ?? "-"}
+                                </span>
+                            </p>
+                            <p class="break-all">
+                                服务端时间：
+                                <span class="ml-2 text-foreground">
+                                    {String(connectionSummary.serverTime)}
+                                </span>
+                            </p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p>mysql2 原生连接未通过。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{connectionError}</p>
+                        </div>
+                    )
+                }
+            </div>
+
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    drizzle
+                </p>
+                {
+                    shopError ? (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p>Drizzle 读取 shop 表失败。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{shopError}</p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                Drizzle 初始化状态：
+                                <span class="ml-2 font-medium text-foreground">ready</span>
+                            </p>
+                            <p>
+                                当前读取记录数：
+                                <span class="ml-2 text-foreground">{shopRows.length}</span>
+                            </p>
+                            <p class="text-muted-foreground">
+                                如果这里是 0，说明表已可读，但当前还没有测试数据。
+                            </p>
+                        </div>
+                    )
+                }
+            </div>
+        </div>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <h2 class="text-2xl font-semibold">shop 表预览</h2>
+            <p class="mt-2 text-sm/7 text-muted-foreground">
+                最多展示 5 条数据，方便确认 Drizzle schema 与数据库结构已经对齐。
+            </p>
+
+            {
+                shopRows.length > 0 ? (
+                    <div class="mt-6 overflow-x-auto rounded-xl border">
+                        <table class="min-w-full text-left text-sm text-foreground">
+                            <thead class="bg-muted/50 text-muted-foreground">
+                                <tr class="border-b">
+                                    <th class="p-3 font-medium">id</th>
+                                    <th class="p-3 font-medium">name</th>
+                                    <th class="p-3 font-medium">slug</th>
+                                    <th class="p-3 font-medium">status</th>
+                                    <th class="p-3 font-medium">createdAt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {shopRows.map((row) => (
+                                    <tr class="border-b bg-card last:border-b-0">
+                                        <td class="p-3">{row.id}</td>
+                                        <td class="p-3">{row.name}</td>
+                                        <td class="p-3">{row.slug}</td>
+                                        <td class="p-3">{row.status}</td>
+                                        <td class="p-3">
+                                            {row.createdAt ? row.createdAt.toISOString() : "-"}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div class="mt-6 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        暂无可展示的 shop 数据。
+                    </div>
+                )
+            }
+        </section>
+    </section>
+</BaseLayout>

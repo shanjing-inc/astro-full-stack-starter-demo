@@ -1,0 +1,10 @@
+.astro/**
+.tmp/**
+coverage/**
+dist/**
+drizzle/**
+node_modules/**
+src/graphql/generated/*
+test-results/**
+playwright-report/**
+pnpm-debug.log*

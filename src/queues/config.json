@@ -1,0 +1,42 @@
+{
+    "queues": {
+        "critical": {
+            "description": "高优先级任务队列",
+            "concurrency": 2,
+            "instances": 2,
+            "maxMemory": "500M"
+        },
+        "default": {
+            "description": "默认优先级任务队列",
+            "concurrency": 5,
+            "instances": 3,
+            "maxMemory": "500M"
+        },
+        "low": {
+            "description": "低优先级任务队列",
+            "concurrency": 2,
+            "instances": 1,
+            "maxMemory": "300M"
+        }
+    },
+    "pm2": {
+        "script": "scripts/start-queue-worker.mjs",
+        "exec_mode": "fork",
+        "autorestart": true,
+        "watch": false,
+        "log_date_format": "YYYY-MM-DD HH:mm:ss Z",
+        "merge_logs": true,
+        "restart_delay": 1000,
+        "max_restarts": 10,
+        "min_uptime": "10s",
+        "instance_var": "NODE_APP_INSTANCE"
+    },
+    "scheduler": {
+        "description": "Cron 计划任务调度器",
+        "heartbeatTtlMs": 120000,
+        "leaderLockTtlMs": 45000,
+        "maxMemory": "256M",
+        "slotLockTtlMs": 3888000000,
+        "tickIntervalMs": 30000
+    }
+}

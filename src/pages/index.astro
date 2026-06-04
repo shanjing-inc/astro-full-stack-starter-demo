@@ -1,0 +1,118 @@
+---
+import CounterIsland from "@/components/public/counter-island";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+const featureCards = [
+    {
+        description: "加载预设 query / mutation，直接请求 /api/graphql 并查看返回结果。",
+        href: "/test/graphql",
+        label: "GraphQL 测试页",
+        tag: "graphql",
+    },
+    {
+        description: "验证 mysql2 连接、Drizzle 初始化，以及测试表是否可读。",
+        href: "/test/mysql",
+        label: "MySQL 测试页",
+        tag: "database",
+    },
+    {
+        description: "手动派发 BullMQ default / critical 队列任务，观察 worker 消费日志。",
+        href: "/test/queue",
+        label: "Queue 测试页",
+        tag: "queue",
+    },
+    {
+        description: "通过 Redis cache adapter 验证 TTL 缓存和 lock capability。",
+        href: "/test/cache",
+        label: "Cache 测试页",
+        tag: "cache",
+    },
+    {
+        description: "连接 /api/websocket/public，测试 WebSocket ping、echo 和自定义 JSON 消息。",
+        href: "/test/websocket",
+        label: "WebSocket 测试页",
+        tag: "websocket",
+    },
+    {
+        description: "连接 /api/sse/public，测试 EventSource ready 事件和服务端主动推送。",
+        href: "/test/sse",
+        label: "SSE 测试页",
+        tag: "sse",
+    },
+    {
+        description: "超级管理员后台，使用 React Router 管理路由的独立 SPA 应用。",
+        href: "/super-admin",
+        label: "Super Admin",
+        tag: "admin",
+    },
+];
+---
+
+<BaseLayout title="Astro Deno Starter">
+    <section class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div class="space-y-6">
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                Deno Runtime Ready
+            </p>
+            <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
+                Astro 6 + React + Tailwind 4 + Deno SSR 开发环境已就绪
+            </h1>
+            <p class="max-w-2xl text-base/8 text-muted-foreground sm:text-lg">
+                当前首页只保留项目概览与测试入口，不再在服务端渲染阶段自动触发数据库或队列副作用。
+                你可以按需进入独立测试页面，分别验证 MySQL、BullMQ、GraphQL 与 WebSocket。
+            </p>
+            <div class="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    astro
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    deno
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    react
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    tailwindcss
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    drizzle
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    mysql2
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    bullmq
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    cache
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    websocket
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    sse
+                </span>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+                {
+                    featureCards.map((card) => (
+                        <a
+                            class="group rounded-xl border bg-card p-6 text-card-foreground shadow-sm transition hover:bg-accent hover:text-accent-foreground"
+                            href={card.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <p class="text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                                {card.tag}
+                            </p>
+                            <h2 class="mt-4 text-2xl font-semibold">{card.label}</h2>
+                            <p class="mt-3 leading-7 text-muted-foreground">{card.description}</p>
+                            <p class="mt-6 text-sm text-primary transition">进入测试页 →</p>
+                        </a>
+                    ))
+                }
+            </div>
+        </div>
+        <CounterIsland client:load />
+    </section>
+</BaseLayout>
