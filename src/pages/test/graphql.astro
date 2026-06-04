@@ -1,0 +1,579 @@
+---
+import BaseLayout from "@/layouts/base-layout.astro";
+
+type GraphQLEndpointKey = "member" | "super-admin";
+
+interface GraphQLEndpointOption {
+    label: string;
+    path: string;
+    value: GraphQLEndpointKey;
+}
+
+interface GraphQLTestPreset {
+    description: string;
+    endpoint: GraphQLEndpointKey;
+    label: string;
+    operationType: "mutation" | "query";
+    query: string;
+    variables: string;
+}
+
+const DEFAULT_ENDPOINT = "member" satisfies GraphQLEndpointKey;
+const ENDPOINT_OPTIONS: GraphQLEndpointOption[] = [
+    {
+        label: "Member",
+        path: "/api/graphql/member",
+        value: "member",
+    },
+    {
+        label: "Super Admin",
+        path: "/api/graphql/super-admin",
+        value: "super-admin",
+    },
+];
+const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
+    {
+        description: "读取前 5 个 shop，确认 Cloudflare member endpoint 可用。",
+        endpoint: "member",
+        label: "ListShops",
+        operationType: "query",
+        query: /* GraphQL */ `
+            query ListShops($limit: Int) {
+                listShops(limit: $limit) {
+                    id
+                    name
+                    slug
+                    status
+                    createdAt
+                    updatedAt
+                }
+            }
+        `,
+        variables: JSON.stringify({ limit: 5 }, null, 4),
+    },
+    {
+        description: "按 id 查询单个 shop，确认 D1 where 查询可用。",
+        endpoint: "member",
+        label: "GetShop",
+        operationType: "query",
+        query: /* GraphQL */ `
+            query GetShop($where: ShopFilters!) {
+                getShop(where: $where) {
+                    id
+                    name
+                    slug
+                    status
+                }
+            }
+        `,
+        variables: JSON.stringify({ where: { id: { eq: 1 } } }, null, 4),
+    },
+    {
+        description: "读取前 5 个 product，确认 Cloudflare member endpoint 的商品查询可用。",
+        endpoint: "member",
+        label: "ListProducts",
+        operationType: "query",
+        query: /* GraphQL */ `
+            query ListProducts($limit: Int, $orderBy: ProductOrderBy) {
+                listProducts(limit: $limit, orderBy: $orderBy) {
+                    id
+                    shopId
+                    name
+                    sku
+                    status
+                }
+            }
+        `,
+        variables: JSON.stringify(
+            {
+                limit: 5,
+                orderBy: {
+                    id: {
+                        direction: "asc",
+                        priority: 1,
+                    },
+                },
+            },
+            null,
+            4
+        ),
+    },
+    {
+        description: "读取前 5 个 order，确认 Cloudflare member endpoint 的订单查询可用。",
+        endpoint: "member",
+        label: "ListOrders",
+        operationType: "query",
+        query: /* GraphQL */ `
+            query ListOrders($limit: Int, $orderBy: OrderOrderBy) {
+                listOrders(limit: $limit, orderBy: $orderBy) {
+                    id
+                    shopId
+                    productId
+                    orderNo
+                    status
+                }
+            }
+        `,
+        variables: JSON.stringify(
+            {
+                limit: 5,
+                orderBy: {
+                    id: {
+                        direction: "asc",
+                        priority: 1,
+                    },
+                },
+            },
+            null,
+            4
+        ),
+    },
+    {
+        description: "创建一个 shop 示例，确认 super-admin 端点业务 mutation 可用。",
+        endpoint: "super-admin",
+        label: "CreateShop",
+        operationType: "mutation",
+        query: /* GraphQL */ `
+            mutation CreateShop($set: CreateShopSetInput!) {
+                createShop(set: $set) {
+                    id
+                    name
+                    slug
+                    status
+                    createdAt
+                    updatedAt
+                }
+            }
+        `,
+        variables: JSON.stringify(
+            {
+                set: {
+                    name: "Cloudflare GraphQL Demo Shop",
+                    slug: "cloudflare-graphql-demo-shop-change-me",
+                    status: "draft",
+                },
+            },
+            null,
+            4
+        ),
+    },
+    {
+        description:
+            "读取管理员列表，确认 package super-admin GraphQL 已通过 D1 provider 访问 user 表。",
+        endpoint: "super-admin",
+        label: "ListUsers",
+        operationType: "query",
+        query: /* GraphQL */ `
+            query ListUsers($where: UserFilters, $limit: Int) {
+                listUsers(where: $where, limit: $limit) {
+                    id
+                    name
+                    email
+                    role
+                    updatedAt
+                }
+            }
+        `,
+        variables: JSON.stringify(
+            {
+                limit: 5,
+                where: {
+                    role: {
+                        eq: "admin",
+                    },
+                },
+            },
+            null,
+            4
+        ),
+    },
+];
+---
+
+<BaseLayout title="GraphQL Test">
+    <section
+        class="space-y-8"
+        data-default-endpoint={DEFAULT_ENDPOINT}
+        data-endpoints={JSON.stringify(ENDPOINT_OPTIONS)}
+        data-presets={JSON.stringify(GRAPHQL_TEST_PRESETS)}
+        id="graphql-test-page"
+    >
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                GraphQL Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                Cloudflare D1 GraphQL 测试页
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                页面结构与 Deno demo 对齐。member 端点验证 D1 shop、product、order 查询，super-admin
+                端点验证 package 内置 GraphQL 和业务 mutation 通过 D1 provider 访问数据库。
+            </p>
+        </div>
+
+        <section class="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+            <aside class="space-y-4">
+                <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                        endpoint
+                    </p>
+                    <div class="mt-4 grid gap-3">
+                        <label class="grid gap-2">
+                            <span class="text-sm text-muted-foreground">Current endpoint</span>
+                            <select
+                                class="h-10 rounded-lg border border-input bg-background px-3 text-sm text-foreground transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                                id="graphql-endpoint"
+                            >
+                                {
+                                    ENDPOINT_OPTIONS.map((option) => (
+                                        <option value={option.value}>{option.label}</option>
+                                    ))
+                                }
+                            </select>
+                        </label>
+                        <p
+                            class="rounded-lg border bg-muted/40 px-4 py-3 text-sm text-muted-foreground"
+                        >
+                            <span
+                                class="block text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                            >
+                                path
+                            </span>
+                            <span
+                                class="mt-2 block font-mono text-foreground"
+                                id="graphql-endpoint-path"
+                            >
+                                {
+                                    ENDPOINT_OPTIONS.find(
+                                        (option) => option.value === DEFAULT_ENDPOINT
+                                    )?.path
+                                }
+                            </span>
+                        </p>
+                    </div>
+                    <a
+                        class="mt-6 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                        href="/api/graphql/member"
+                        id="open-graphiql"
+                    >
+                        打开 endpoint
+                    </a>
+                </div>
+
+                <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <div class="flex items-center justify-between gap-3">
+                        <div>
+                            <p
+                                class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                            >
+                                presets
+                            </p>
+                            <h2 class="mt-3 text-2xl font-semibold">预设操作</h2>
+                        </div>
+                        <span
+                            class="rounded-full border bg-secondary px-3 py-1 text-xs text-secondary-foreground"
+                        >
+                            {GRAPHQL_TEST_PRESETS.length} 个
+                        </span>
+                    </div>
+
+                    <div class="mt-6 space-y-3">
+                        {
+                            GRAPHQL_TEST_PRESETS.map((preset, index) => (
+                                <button
+                                    class="w-full rounded-xl border bg-background p-4 text-left transition hover:bg-accent hover:text-accent-foreground"
+                                    data-preset-index={index}
+                                    type="button"
+                                >
+                                    <div class="flex items-center justify-between gap-3">
+                                        <div class="space-y-2">
+                                            <strong class="block text-base text-foreground">
+                                                {preset.label}
+                                            </strong>
+                                            <span class="rounded-full border bg-secondary px-3 py-1 text-xs text-secondary-foreground uppercase">
+                                                {preset.endpoint}
+                                            </span>
+                                        </div>
+                                        <span
+                                            class:list={[
+                                                "rounded-full border px-3 py-1 text-xs uppercase",
+                                                preset.operationType === "query"
+                                                    ? "bg-secondary text-secondary-foreground"
+                                                    : "bg-muted text-muted-foreground",
+                                            ]}
+                                        >
+                                            {preset.operationType}
+                                        </span>
+                                    </div>
+                                    <p class="mt-3 text-sm/7 text-muted-foreground">
+                                        {preset.description}
+                                    </p>
+                                </button>
+                            ))
+                        }
+                    </div>
+                </div>
+            </aside>
+
+            <div class="space-y-6">
+                <form
+                    class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm"
+                    id="graphql-form"
+                >
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <p
+                                class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                            >
+                                request
+                            </p>
+                            <h2 class="mt-3 text-2xl font-semibold">手动请求</h2>
+                        </div>
+                        <button
+                            class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                            id="load-default-preset"
+                            type="button"
+                        >
+                            加载默认预设
+                        </button>
+                    </div>
+
+                    <div class="mt-6 grid gap-4">
+                        <label class="grid gap-2">
+                            <span class="text-sm text-muted-foreground">GraphQL Query</span>
+                            <textarea
+                                class="min-h-72 rounded-xl border border-input bg-background p-4 font-mono text-sm/7 text-foreground transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                                id="graphql-query"
+                                name="query"
+                                spellcheck="false"></textarea>
+                        </label>
+
+                        <label class="grid gap-2">
+                            <span class="text-sm text-muted-foreground">Variables JSON</span>
+                            <textarea
+                                class="min-h-48 rounded-xl border border-input bg-background p-4 font-mono text-sm/7 text-foreground transition outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+                                id="graphql-variables"
+                                name="variables"
+                                spellcheck="false"></textarea>
+                        </label>
+
+                        <div class="flex flex-wrap gap-3">
+                            <button
+                                class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                                id="submit-graphql"
+                                type="submit"
+                            >
+                                执行请求
+                            </button>
+                            <button
+                                class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                                id="clear-response"
+                                type="button"
+                            >
+                                清空结果
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <div class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p
+                                class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                            >
+                                response
+                            </p>
+                            <h2 class="mt-3 text-2xl font-semibold">响应结果</h2>
+                        </div>
+                        <p
+                            class="rounded-full border bg-secondary px-3 py-1 text-xs text-secondary-foreground"
+                            id="graphql-status"
+                        >
+                            尚未发送请求。
+                        </p>
+                    </div>
+                    <pre
+                        class="mt-6 min-h-72 overflow-auto rounded-xl border bg-muted/40 p-4 font-mono text-sm/7 whitespace-pre-wrap text-foreground"
+                        id="graphql-response">点击左侧预设或手动填写 query 后执行请求。</pre>
+                </section>
+            </div>
+        </section>
+    </section>
+</BaseLayout>
+
+<script>
+    interface GraphQLEndpointOptionClient {
+        label: string;
+        path: string;
+        value: "member" | "super-admin";
+    }
+
+    interface GraphQLTestPresetClient {
+        description: string;
+        endpoint: "member" | "super-admin";
+        label: string;
+        operationType: "mutation" | "query";
+        query: string;
+        variables: string;
+    }
+
+    const pageRoot = document.querySelector("#graphql-test-page") as HTMLElement | null;
+    const clearResponseButton = document.querySelector(
+        "#clear-response"
+    ) as HTMLButtonElement | null;
+    const defaultPresetButton = document.querySelector(
+        "#load-default-preset"
+    ) as HTMLButtonElement | null;
+    const endpointPath = document.querySelector("#graphql-endpoint-path") as HTMLElement | null;
+    const endpointSelect = document.querySelector("#graphql-endpoint") as HTMLSelectElement | null;
+    const form = document.querySelector("#graphql-form") as HTMLFormElement | null;
+    const graphiqlLink = document.querySelector("#open-graphiql") as HTMLAnchorElement | null;
+    const queryTextarea = document.querySelector("#graphql-query") as HTMLTextAreaElement | null;
+    const responsePanel = document.querySelector("#graphql-response") as HTMLElement | null;
+    const statusText = document.querySelector("#graphql-status") as HTMLElement | null;
+    const variablesTextarea = document.querySelector(
+        "#graphql-variables"
+    ) as HTMLTextAreaElement | null;
+
+    if (
+        pageRoot &&
+        clearResponseButton &&
+        defaultPresetButton &&
+        endpointPath &&
+        endpointSelect &&
+        form &&
+        graphiqlLink &&
+        queryTextarea &&
+        responsePanel &&
+        statusText &&
+        variablesTextarea
+    ) {
+        const elements = {
+            clearResponseButton,
+            defaultPresetButton,
+            endpointPath,
+            endpointSelect,
+            form,
+            graphiqlLink,
+            pageRoot,
+            queryTextarea,
+            responsePanel,
+            statusText,
+            variablesTextarea,
+        };
+        const endpointOptions = JSON.parse(
+            elements.pageRoot.dataset.endpoints ?? "[]"
+        ) as GraphQLEndpointOptionClient[];
+        const presets = JSON.parse(
+            elements.pageRoot.dataset.presets ?? "[]"
+        ) as GraphQLTestPresetClient[];
+
+        function getEndpointPath(endpointKey: "member" | "super-admin") {
+            return (
+                endpointOptions.find((option) => option.value === endpointKey)?.path ??
+                "/api/graphql/member"
+            );
+        }
+
+        function syncEndpoint(endpointKey: "member" | "super-admin") {
+            elements.endpointSelect.value = endpointKey;
+            elements.endpointPath.textContent = getEndpointPath(endpointKey);
+            elements.graphiqlLink.href = getEndpointPath(endpointKey);
+        }
+
+        function applyPreset(index: number) {
+            const preset = presets[index];
+
+            if (!preset) {
+                return;
+            }
+
+            syncEndpoint(preset.endpoint);
+            elements.queryTextarea.value = preset.query.trim();
+            elements.variablesTextarea.value = preset.variables;
+            elements.statusText.textContent = `已加载预设：${preset.label}`;
+        }
+
+        async function executeGraphQLRequest() {
+            const endpoint = getEndpointPath(
+                elements.endpointSelect.value as "member" | "super-admin"
+            );
+            const query = elements.queryTextarea.value.trim();
+            const variablesText = elements.variablesTextarea.value.trim();
+            let variables: Record<string, unknown> = {};
+
+            if (!query) {
+                elements.statusText.textContent = "请求失败：缺少 query";
+                elements.responsePanel.textContent = "请输入 GraphQL Query。";
+                return;
+            }
+
+            if (variablesText) {
+                try {
+                    variables = JSON.parse(variablesText);
+                } catch {
+                    elements.statusText.textContent = "请求失败：variables 格式错误";
+                    elements.responsePanel.textContent = "Variables JSON 解析失败，请检查格式。";
+                    return;
+                }
+            }
+
+            elements.statusText.textContent = "正在发送请求...";
+            elements.responsePanel.textContent = "请求中...";
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({ query, variables }),
+                });
+                const result = await response.json();
+
+                elements.responsePanel.textContent = JSON.stringify(result, null, 4);
+                elements.statusText.textContent = response.ok
+                    ? `请求成功 (${response.status})`
+                    : `请求失败 (${response.status})`;
+            } catch (error) {
+                elements.responsePanel.textContent =
+                    error instanceof Error ? error.message : "网络请求失败。";
+                elements.statusText.textContent = "请求失败：网络错误";
+            }
+        }
+
+        elements.endpointSelect.addEventListener("change", () => {
+            syncEndpoint(elements.endpointSelect.value as "member" | "super-admin");
+        });
+        elements.defaultPresetButton.addEventListener("click", () => {
+            applyPreset(0);
+        });
+        elements.clearResponseButton.addEventListener("click", () => {
+            elements.responsePanel.textContent = "响应结果已清空。";
+            elements.statusText.textContent = "尚未发送请求。";
+        });
+        document.querySelectorAll<HTMLButtonElement>("[data-preset-index]").forEach((button) => {
+            button.addEventListener("click", () => {
+                applyPreset(Number(button.dataset.presetIndex));
+            });
+        });
+        elements.form.addEventListener("submit", (event) => {
+            event.preventDefault();
+            void executeGraphQLRequest();
+        });
+
+        syncEndpoint(
+            (elements.pageRoot.dataset.defaultEndpoint ?? "member") as "member" | "super-admin"
+        );
+        applyPreset(0);
+    } else {
+        console.error("[graphql-test] initialization failed.");
+    }
+</script>

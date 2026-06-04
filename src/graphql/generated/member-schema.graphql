@@ -1,0 +1,212 @@
+input CreateOrderSetInput {
+    orderNo: String!
+    productId: Int!
+    quantity: Int
+    remark: String
+    shopId: Int!
+    status: String
+    totalAmountInCents: Int!
+    unitPriceInCents: Int!
+}
+
+input CreateProductSetInput {
+    inventoryCount: Int
+    name: String!
+    priceInCents: Int!
+    shopId: Int!
+    sku: String!
+    status: String
+}
+
+input CreateShopSetInput {
+    name: String!
+    slug: String!
+    status: String
+}
+
+input InnerOrder {
+    direction: OrderDirection!
+    priority: Int!
+}
+
+input IntFilters {
+    eq: Int
+    gt: Int
+    gte: Int
+    inArray: [Int!]
+    isNotNull: Boolean
+    isNull: Boolean
+    lt: Int
+    lte: Int
+    ne: Int
+    notInArray: [Int!]
+}
+
+scalar JSON
+
+type Mutation {
+    createOrder(set: CreateOrderSetInput!): OrderItem!
+    createProduct(set: CreateProductSetInput!): ProductItem!
+    deleteOrder(where: OrderFilters!): [OrderItem!]!
+    deleteProduct(where: ProductFilters!): [ProductItem!]!
+    updateOrder(set: UpdateOrderSetInput!, where: OrderFilters!): [OrderItem!]!
+    updateProduct(set: UpdateProductSetInput!, where: ProductFilters!): [ProductItem!]!
+}
+
+enum OrderDirection {
+    asc
+    desc
+}
+
+input OrderFilters {
+    id: IntFilters
+    orderNo: StringFilters
+    productId: IntFilters
+    shopId: IntFilters
+    status: StringFilters
+}
+
+type OrderItem {
+    createdAt: String
+    id: ID
+    orderNo: String
+    product: ProductItem
+    productId: Int
+    quantity: Int
+    remark: String
+    shop: ShopItem
+    shopId: Int
+    status: String
+    totalAmountInCents: Int
+    unitPriceInCents: Int
+    updatedAt: String
+}
+
+input OrderOrderBy {
+    createdAt: InnerOrder
+    id: InnerOrder
+    orderNo: InnerOrder
+    productId: InnerOrder
+    quantity: InnerOrder
+    shopId: InnerOrder
+    status: InnerOrder
+    totalAmountInCents: InnerOrder
+    unitPriceInCents: InnerOrder
+    updatedAt: InnerOrder
+}
+
+input ProductFilters {
+    id: IntFilters
+    shopId: IntFilters
+    sku: StringFilters
+    status: StringFilters
+}
+
+type ProductItem {
+    createdAt: String
+    id: ID
+    inventoryCount: Int
+    name: String
+    orders: [OrderItem!]
+    priceInCents: Int
+    shop: ShopItem
+    shopId: Int
+    sku: String
+    status: String
+    updatedAt: String
+}
+
+input ProductOrderBy {
+    createdAt: InnerOrder
+    id: InnerOrder
+    inventoryCount: InnerOrder
+    name: InnerOrder
+    priceInCents: InnerOrder
+    shopId: InnerOrder
+    sku: InnerOrder
+    status: InnerOrder
+    updatedAt: InnerOrder
+}
+
+type Query {
+    getOrder(where: OrderFilters!): OrderItem
+    getProduct(where: ProductFilters!): ProductItem
+    getShop(where: ShopFilters!): ShopItem
+    listOrders(limit: Int, offset: Int, orderBy: OrderOrderBy, where: OrderFilters): [OrderItem!]
+    listProducts(
+        limit: Int
+        offset: Int
+        orderBy: ProductOrderBy
+        where: ProductFilters
+    ): [ProductItem!]
+    listShops(limit: Int, offset: Int, orderBy: ShopOrderBy, where: ShopFilters): [ShopItem!]
+}
+
+input ShopFilters {
+    id: IntFilters
+    slug: StringFilters
+    status: StringFilters
+}
+
+type ShopItem {
+    createdAt: String
+    id: ID
+    name: String
+    orders: [OrderItem!]
+    products: [ProductItem!]
+    slug: String
+    status: String
+    updatedAt: String
+}
+
+input ShopOrderBy {
+    createdAt: InnerOrder
+    id: InnerOrder
+    name: InnerOrder
+    slug: InnerOrder
+    status: InnerOrder
+    updatedAt: InnerOrder
+}
+
+input StringFilters {
+    eq: String
+    gt: String
+    gte: String
+    ilike: String
+    inArray: [String!]
+    isNotNull: Boolean
+    isNull: Boolean
+    like: String
+    lt: String
+    lte: String
+    ne: String
+    notIlike: String
+    notInArray: [String!]
+    notLike: String
+}
+
+input UpdateOrderSetInput {
+    orderNo: String
+    productId: Int
+    quantity: Int
+    remark: String
+    shopId: Int
+    status: String
+    totalAmountInCents: Int
+    unitPriceInCents: Int
+}
+
+input UpdateProductSetInput {
+    inventoryCount: Int
+    name: String
+    priceInCents: Int
+    shopId: Int
+    sku: String
+    status: String
+}
+
+input UpdateShopSetInput {
+    name: String
+    slug: String
+    status: String
+}

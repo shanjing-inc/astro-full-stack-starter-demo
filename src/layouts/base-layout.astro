@@ -1,0 +1,47 @@
+---
+import "@/styles/global.css";
+import { SiteThemeToggle } from "@/components/public/site-theme-toggle";
+
+interface Props {
+    description?: string;
+    title: string;
+}
+
+const { description = "Cloudflare Worker + D1 demo for astro-fullstack-starter.", title } =
+    Astro.props;
+---
+
+<!doctype html>
+<html lang="zh-CN">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="description" content={description} />
+        <meta name="generator" content={Astro.generator} />
+        <title>{title}</title>
+        <script is:inline>
+            (() => {
+                try {
+                    const theme =
+                        window.localStorage.getItem("site:theme") === "dark" ? "dark" : "light";
+                    const root = document.documentElement;
+
+                    root.classList.toggle("dark", theme === "dark");
+                    root.style.colorScheme = theme;
+                } catch {
+                    document.documentElement.style.colorScheme = "light";
+                }
+            })();
+        </script>
+    </head>
+    <body class="min-h-screen bg-background text-foreground">
+        <main
+            class="relative mx-auto flex min-h-screen w-full max-w-7xl flex-col px-6 py-10 md:px-10"
+        >
+            <div class="absolute top-6 right-6 z-10 md:top-10 md:right-10">
+                <SiteThemeToggle client:only="react" />
+            </div>
+            <slot />
+        </main>
+    </body>
+</html>

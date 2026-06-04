@@ -1,0 +1,238 @@
+{
+    "$schema": "./node_modules/wrangler/config-schema.json",
+    "name": "astro-full-stack-cloudflare-d1-demo",
+    "main": "./src/worker.ts",
+    "compatibility_date": "2026-05-19",
+    "compatibility_flags": ["nodejs_compat"],
+    "assets": {
+        "directory": "./dist",
+        "binding": "ASSETS",
+    },
+    "durable_objects": {
+        "bindings": [
+            {
+                "name": "WEBSOCKET_ROOM",
+                "class_name": "PublicWebSocketRoom",
+            },
+            {
+                "name": "CACHE_OBJECT",
+                "class_name": "CacheObject",
+            },
+        ],
+    },
+    "migrations": [
+        {
+            "tag": "v1",
+            "new_sqlite_classes": ["PublicWebSocketRoom"],
+        },
+        {
+            "tag": "v2",
+            "new_sqlite_classes": ["CacheObject"],
+        },
+    ],
+    "vars": {
+        "BETTER_AUTH_ALLOWED_HOSTS": "localhost:*,127.0.0.1:*",
+        "BETTER_AUTH_SECRET": "cloudflare-d1-demo-local-secret-please-change",
+    },
+    "d1_databases": [
+        {
+            "binding": "DB",
+            "database_name": "astro-full-stack-cloudflare-d1-demo",
+            "database_id": "00000000-0000-0000-0000-000000000000",
+            "migrations_dir": "drizzle",
+        },
+    ],
+    "kv_namespaces": [
+        {
+            "binding": "CACHE_KV",
+            "id": "00000000000000000000000000000000",
+            "preview_id": "00000000000000000000000000000000",
+        },
+    ],
+    "triggers": {
+        "crons": ["30 4 * * *"],
+    },
+    "queues": {
+        "producers": [
+            {
+                "binding": "QUEUE_CRITICAL",
+                "queue": "astro-full-stack-cloudflare-d1-demo-critical",
+            },
+            {
+                "binding": "QUEUE_DEFAULT",
+                "queue": "astro-full-stack-cloudflare-d1-demo-default",
+            },
+            {
+                "binding": "QUEUE_LOW",
+                "queue": "astro-full-stack-cloudflare-d1-demo-low",
+            },
+        ],
+        "consumers": [
+            {
+                "queue": "astro-full-stack-cloudflare-d1-demo-critical",
+                "max_batch_size": 5,
+                "max_batch_timeout": 5,
+                "max_retries": 3,
+            },
+            {
+                "queue": "astro-full-stack-cloudflare-d1-demo-default",
+                "max_batch_size": 5,
+                "max_batch_timeout": 5,
+                "max_retries": 3,
+            },
+            {
+                "queue": "astro-full-stack-cloudflare-d1-demo-low",
+                "max_batch_size": 5,
+                "max_batch_timeout": 5,
+                "max_retries": 3,
+                "max_concurrency": 1,
+            },
+        ],
+    },
+    "env": {
+        "staging": {
+            "name": "astro-full-stack-cloudflare-d1-demo-staging",
+            // Set CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN outside this file.
+            // Set BETTER_AUTH_SECRET through `wrangler secret put --env staging`.
+            "vars": {
+                "BETTER_AUTH_ALLOWED_HOSTS": "*.workers.dev,localhost:*,127.0.0.1:*",
+                "LOG_SQL": "false",
+                "QUEUE_EXECUTION_RECORD_TTL_SECONDS": "604800",
+                "SENTRY_DSN": "",
+                "SENTRY_RELEASE": "staging",
+                "WEBSOCKET_ALLOWED_ORIGINS": "http://localhost:4321,http://127.0.0.1:4321",
+                "WEBSOCKET_IDLE_TIMEOUT_SECONDS": "120",
+                "WEBSOCKET_MAX_CONNECTIONS": "100",
+            },
+            "d1_databases": [
+                {
+                    "binding": "DB",
+                    "database_name": "astro-full-stack-cloudflare-d1-demo-staging",
+                    "database_id": "9fc25e48-cf04-43c7-a52d-4340481e0a31",
+                    "migrations_dir": "drizzle",
+                },
+            ],
+            "kv_namespaces": [
+                {
+                    "binding": "SESSION",
+                    "id": "7e83fc6eb82d415d9dcd959c310338e6",
+                    "preview_id": "8c38153a6a7541ceb48e7ccfc8bdf88e",
+                },
+                {
+                    "binding": "CACHE_KV",
+                    "id": "30cdab946d6146a4bddd59b363695692",
+                    "preview_id": "8ae28cabee4b4f98aa09745885384058",
+                },
+            ],
+            "queues": {
+                "producers": [
+                    {
+                        "binding": "QUEUE_CRITICAL",
+                        "queue": "astro-full-stack-cloudflare-d1-demo-staging-critical",
+                    },
+                    {
+                        "binding": "QUEUE_DEFAULT",
+                        "queue": "astro-full-stack-cloudflare-d1-demo-staging-default",
+                    },
+                    {
+                        "binding": "QUEUE_LOW",
+                        "queue": "astro-full-stack-cloudflare-d1-demo-staging-low",
+                    },
+                ],
+                "consumers": [
+                    {
+                        "queue": "astro-full-stack-cloudflare-d1-demo-staging-critical",
+                        "max_batch_size": 5,
+                        "max_batch_timeout": 5,
+                        "max_retries": 3,
+                    },
+                    {
+                        "queue": "astro-full-stack-cloudflare-d1-demo-staging-default",
+                        "max_batch_size": 5,
+                        "max_batch_timeout": 5,
+                        "max_retries": 3,
+                    },
+                    {
+                        "queue": "astro-full-stack-cloudflare-d1-demo-staging-low",
+                        "max_batch_size": 5,
+                        "max_batch_timeout": 5,
+                        "max_retries": 3,
+                        "max_concurrency": 1,
+                    },
+                ],
+            },
+        },
+        "production": {
+            "name": "astro-full-stack-cloudflare-d1-demo-production",
+            // Set CLOUDFLARE_ACCOUNT_ID / CLOUDFLARE_API_TOKEN outside this file.
+            // Set BETTER_AUTH_SECRET through `wrangler secret put --env production`.
+            "vars": {
+                "BETTER_AUTH_ALLOWED_HOSTS": "*.workers.dev",
+                "LOG_SQL": "false",
+                "QUEUE_EXECUTION_RECORD_TTL_SECONDS": "604800",
+                "SENTRY_DSN": "",
+                "SENTRY_RELEASE": "production",
+                "WEBSOCKET_ALLOWED_ORIGINS": "https://*.workers.dev",
+                "WEBSOCKET_IDLE_TIMEOUT_SECONDS": "120",
+                "WEBSOCKET_MAX_CONNECTIONS": "100",
+            },
+            "d1_databases": [
+                {
+                    "binding": "DB",
+                    "database_name": "astro-full-stack-cloudflare-d1-demo-production",
+                    "database_id": "42618eda-8feb-4857-b0d9-cc67f924593e",
+                    "migrations_dir": "drizzle",
+                },
+            ],
+            "kv_namespaces": [
+                {
+                    "binding": "SESSION",
+                    "id": "c439b7304666401c8c8510ea71985cbd",
+                    "preview_id": "1a402de362494d029600bd3021922ca1",
+                },
+                {
+                    "binding": "CACHE_KV",
+                    "id": "dc2e57f57ca14595bce4aba34eb766ad",
+                    "preview_id": "a4382145f5ad4e9f8405823d99b5303b",
+                },
+            ],
+            "queues": {
+                "producers": [
+                    {
+                        "binding": "QUEUE_CRITICAL",
+                        "queue": "astro-full-stack-cloudflare-d1-demo-production-critical",
+                    },
+                    {
+                        "binding": "QUEUE_DEFAULT",
+                        "queue": "astro-full-stack-cloudflare-d1-demo-production-default",
+                    },
+                    {
+                        "binding": "QUEUE_LOW",
+                        "queue": "astro-full-stack-cloudflare-d1-demo-production-low",
+                    },
+                ],
+                "consumers": [
+                    {
+                        "queue": "astro-full-stack-cloudflare-d1-demo-production-critical",
+                        "max_batch_size": 5,
+                        "max_batch_timeout": 5,
+                        "max_retries": 3,
+                    },
+                    {
+                        "queue": "astro-full-stack-cloudflare-d1-demo-production-default",
+                        "max_batch_size": 5,
+                        "max_batch_timeout": 5,
+                        "max_retries": 3,
+                    },
+                    {
+                        "queue": "astro-full-stack-cloudflare-d1-demo-production-low",
+                        "max_batch_size": 5,
+                        "max_batch_timeout": 5,
+                        "max_retries": 3,
+                        "max_concurrency": 1,
+                    },
+                ],
+            },
+        },
+    },
+}

@@ -1,0 +1,192 @@
+---
+import { sql } from "drizzle-orm";
+
+import { createCloudflareD1DatabaseProvider, getCloudflareD1Env } from "@/db/client";
+import { order, product, shop } from "@/db/schemas";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+let connectionError: string | null = null;
+let connectionSummary: { connected: number; serverTime: number } | null = null;
+let shopError: string | null = null;
+let shopRows: Array<typeof shop.$inferSelect> = [];
+let businessTableCounts = {
+    orders: 0,
+    products: 0,
+    shops: 0,
+};
+
+try {
+    const provider = createCloudflareD1DatabaseProvider(getCloudflareD1Env());
+    const db = provider.getDb();
+    const rows = await db
+        .select({
+            connected: sql<number>`1`,
+            serverTime: sql<number>`unixepoch()`,
+        })
+        .from(shop)
+        .limit(1);
+
+    connectionSummary = rows[0] ?? {
+        connected: 1,
+        serverTime: Math.floor(Date.now() / 1000),
+    };
+} catch (error) {
+    connectionError = error instanceof Error ? error.message : "D1 连接测试失败。";
+}
+
+try {
+    const provider = createCloudflareD1DatabaseProvider(getCloudflareD1Env());
+    const db = provider.getDb();
+    const [nextShopRows, productRows, orderRows] = await Promise.all([
+        db.select().from(shop).orderBy(shop.id).limit(5),
+        db.select({ id: product.id }).from(product).limit(5),
+        db.select({ id: order.id }).from(order).limit(5),
+    ]);
+
+    shopRows = nextShopRows;
+    businessTableCounts = {
+        orders: orderRows.length,
+        products: productRows.length,
+        shops: nextShopRows.length,
+    };
+} catch (error) {
+    shopError = error instanceof Error ? error.message : "Drizzle D1 查询测试失败。";
+}
+---
+
+<BaseLayout title="D1 Test">
+    <section class="space-y-8">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                D1 Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                Cloudflare D1 与 Drizzle 连通性测试
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面沿用 Deno demo 的 `/test/mysql` 路由，在 Cloudflare demo 中验证 D1
+                binding、Drizzle D1 provider 和业务表读取。
+            </p>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    binding
+                </p>
+                {
+                    connectionSummary ? (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <div>
+                                连接状态：
+                                <span class="ml-2 font-medium text-foreground">
+                                    {connectionSummary.connected}
+                                </span>
+                            </div>
+                            <div>
+                                服务端时间：
+                                <span class="ml-2 text-foreground">
+                                    {connectionSummary.serverTime}
+                                </span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p>D1 binding 连通性测试未通过。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{connectionError}</p>
+                        </div>
+                    )
+                }
+            </div>
+
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    drizzle
+                </p>
+                {
+                    shopError ? (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p>Drizzle D1 读取 shop 表失败。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{shopError}</p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                Drizzle D1 provider 状态：
+                                <span class="ml-2 font-medium text-foreground">ready</span>
+                            </p>
+                            <p>
+                                shop 读取记录数：
+                                <span class="ml-2 text-foreground">
+                                    {businessTableCounts.shops}
+                                </span>
+                            </p>
+                            <p>
+                                product 读取记录数：
+                                <span class="ml-2 text-foreground">
+                                    {businessTableCounts.products}
+                                </span>
+                            </p>
+                            <p>
+                                order 读取记录数：
+                                <span class="ml-2 text-foreground">
+                                    {businessTableCounts.orders}
+                                </span>
+                            </p>
+                            <p class="text-muted-foreground">
+                                如果这里是 0，说明表已可读，但当前还没有测试数据。
+                            </p>
+                        </div>
+                    )
+                }
+            </div>
+        </div>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <h2 class="text-2xl font-semibold">shop 表预览</h2>
+            <p class="mt-2 text-sm/7 text-muted-foreground">
+                最多展示 5 条数据，方便确认 Drizzle D1 schema 与数据库结构已经对齐。
+            </p>
+            {
+                shopRows.length > 0 ? (
+                    <div class="mt-6 overflow-x-auto rounded-xl border">
+                        <table class="min-w-full text-left text-sm text-foreground">
+                            <thead class="bg-muted/50 text-muted-foreground">
+                                <tr class="border-b">
+                                    <th class="p-3 font-medium">id</th>
+                                    <th class="p-3 font-medium">name</th>
+                                    <th class="p-3 font-medium">slug</th>
+                                    <th class="p-3 font-medium">status</th>
+                                    <th class="p-3 font-medium">createdAt</th>
+                                    <th class="p-3 font-medium">updatedAt</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {shopRows.map((row) => (
+                                    <tr class="border-b bg-card last:border-b-0">
+                                        <td class="p-3">{row.id}</td>
+                                        <td class="p-3">{row.name}</td>
+                                        <td class="p-3">{row.slug}</td>
+                                        <td class="p-3">{row.status}</td>
+                                        <td class="p-3">{row.createdAt.toISOString()}</td>
+                                        <td class="p-3">{row.updatedAt.toISOString()}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div class="mt-6 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        暂无可展示的 shop 数据。可先访问 GraphQL 测试页创建一条。
+                    </div>
+                )
+            }
+        </section>
+    </section>
+</BaseLayout>

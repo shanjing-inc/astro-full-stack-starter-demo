@@ -1,0 +1,160 @@
+---
+import { env } from "cloudflare:workers";
+
+import CounterIsland from "@/components/public/counter-island";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+const hasD1Binding = Boolean(env.DB);
+const featureCards = [
+    {
+        description: "读取 D1 binding，验证 Drizzle D1 provider 和业务表查询。",
+        href: "/test/mysql",
+        label: "D1 测试页",
+        tag: "database",
+    },
+    {
+        description: "通过 Cloudflare demo 的 GraphQL API 读取 shop、product、order 并创建 shop。",
+        href: "/test/graphql",
+        label: "GraphQL 测试页",
+        tag: "graphql",
+    },
+    {
+        description: "投递 Cloudflare Queues 测试任务，并查看 D1 中的异步执行状态。",
+        href: "/test/queue",
+        label: "Queue 测试页",
+        tag: "queue",
+    },
+    {
+        description: "验证 KV、Cache API、Durable Objects 的 cache 行为和 lock capability。",
+        href: "/test/cache",
+        label: "Cache 测试页",
+        tag: "cache",
+    },
+    {
+        description: "连接 WebSocket endpoint，验证 Cloudflare Workers 实时双向通信链路。",
+        href: "/test/websocket",
+        label: "WebSocket 测试页",
+        tag: "realtime",
+    },
+    {
+        description: "连接 /api/sse/public，验证 EventSource 和 Workers 单向推送链路。",
+        href: "/test/sse",
+        label: "SSE 测试页",
+        tag: "sse",
+    },
+    {
+        description:
+            "使用 D1 user/account/session 表演示 better-auth install / login / logout 页面流。",
+        href: "/super-admin",
+        label: "Super Admin",
+        tag: "admin",
+    },
+];
+---
+
+<BaseLayout title="Cloudflare D1 Demo">
+    <section class="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
+        <div class="space-y-6">
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                Cloudflare Runtime Ready
+            </p>
+            <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
+                Astro 6 + Cloudflare Worker + D1 部署样例
+            </h1>
+            <p class="max-w-2xl text-base/8 text-muted-foreground sm:text-lg">
+                当前 demo 保留与 Deno + MySQL demo 对齐的页面入口，并把数据库链路切换为 Cloudflare
+                D1 provider。Queue 页面可投递 Cloudflare Queues 任务，WebSocket 和 SSE 页面验证
+                Worker 原生实时能力。
+            </p>
+            <div class="flex flex-wrap gap-3 text-sm text-muted-foreground">
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    astro
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    cloudflare
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    worker
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    d1
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    drizzle
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    provider
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    cache
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    sse
+                </span>
+                <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
+                    DB: {hasD1Binding ? "ready" : "pending"}
+                </span>
+            </div>
+            <div class="grid gap-4 md:grid-cols-2">
+                {
+                    featureCards.map((card) => (
+                        <a
+                            class="group rounded-xl border bg-card p-6 text-card-foreground shadow-sm transition hover:bg-accent hover:text-accent-foreground"
+                            href={card.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            <p class="text-xs font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                                {card.tag}
+                            </p>
+                            <h2 class="mt-4 text-2xl font-semibold">{card.label}</h2>
+                            <p class="mt-3 leading-7 text-muted-foreground">{card.description}</p>
+                            <p class="mt-6 text-sm text-primary transition">进入测试页 →</p>
+                        </a>
+                    ))
+                }
+            </div>
+        </div>
+        <div class="space-y-4">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <div class="space-y-5">
+                    <div class="space-y-2">
+                        <p
+                            class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase"
+                        >
+                            D1 Provider Demo
+                        </p>
+                        <h2 class="text-2xl font-semibold text-card-foreground">
+                            Cloudflare binding 状态
+                        </h2>
+                        <p class="text-sm/7 text-muted-foreground">
+                            这个区域沿用 Deno demo 右侧卡片布局，用来确认 Worker runtime、D1 binding
+                            和 Tailwind 样式链路都已经打通。
+                        </p>
+                    </div>
+                    <div class="rounded-xl border bg-muted p-6">
+                        <div class="text-sm text-muted-foreground">DB binding</div>
+                        <div class="mt-2 text-5xl font-semibold tracking-tight text-foreground">
+                            {hasD1Binding ? "ready" : "pending"}
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-3">
+                        <a
+                            class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                            href="/test/mysql"
+                        >
+                            验证 D1
+                        </a>
+                        <a
+                            class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                            href="/test/graphql"
+                        >
+                            验证 GraphQL
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <CounterIsland client:load />
+        </div>
+    </section>
+</BaseLayout>

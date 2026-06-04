@@ -1,0 +1,60 @@
+import { createWebSocketEndpointAdapter } from "@shanjing/astro-full-stack-starter/websocket/adapter";
+import { createWebSocketClientMessageSchema } from "@shanjing/astro-full-stack-starter/websocket/protocol/messages";
+import { serverPushDemoClientMessageSchema } from "@/websocket/features/server-push-demo";
+import { createServerPushDemoHandler } from "@/websocket/features/server-push-demo";
+import { websocketReporter } from "@/websocket/reporter";
+
+import type { ServerPushDemoServerMessageInput } from "@/websocket/features/server-push-demo";
+import type { WebSocketEndpointAdapterDefinition } from "@shanjing/astro-full-stack-starter/websocket/adapter";
+import type {
+    WebSocketConnectionContext,
+    WebSocketEndpointModule,
+    WebSocketEndpointHandlerOptions,
+    WebSocketEndpointHandlers,
+} from "@shanjing/astro-full-stack-starter/websocket/types";
+
+const publicWebSocketClientMessageSchema = createWebSocketClientMessageSchema([
+    serverPushDemoClientMessageSchema,
+]);
+
+type PublicWebSocketConnectionContext = WebSocketConnectionContext<
+    WebSocketEndpointModule<string, ServerPushDemoServerMessageInput>
+>;
+
+function createPublicWebSocketHandlers(
+    _context: PublicWebSocketConnectionContext,
+    options: WebSocketEndpointHandlerOptions<ServerPushDemoServerMessageInput>
+): WebSocketEndpointHandlers {
+    const serverPushDemoHandler = createServerPushDemoHandler(options);
+
+    return {
+        dispose() {
+            serverPushDemoHandler.dispose();
+        },
+        handleMessage(message) {
+            if (message.type === "serverPushDemo") {
+                serverPushDemoHandler.handle(serverPushDemoClientMessageSchema.parse(message));
+                return true;
+            }
+
+            return false;
+        },
+    };
+}
+
+export const publicWebSocketEndpoint = {
+    clientMessageSchema: publicWebSocketClientMessageSchema,
+    createHandlers: createPublicWebSocketHandlers,
+} as const satisfies WebSocketEndpointAdapterDefinition<ServerPushDemoServerMessageInput>;
+
+export const adapter = createWebSocketEndpointAdapter(publicWebSocketEndpoint, {
+    cloudflare: {
+        driver: "durableObject",
+        durableObject: {
+            binding: "WEBSOCKET_ROOM",
+            hibernation: true,
+            room: "public-demo",
+        },
+    },
+    reporter: websocketReporter,
+});

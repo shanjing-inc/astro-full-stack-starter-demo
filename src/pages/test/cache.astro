@@ -1,0 +1,287 @@
+---
+import {
+    createCloudflareCacheApiStore,
+    createCloudflareDurableObjectCacheStore,
+    createCloudflareKvCacheStore,
+    type CloudflareCacheNamespace,
+    type CloudflareKvNamespaceLike,
+    type CloudflareRuntimeCacheLike,
+} from "@shanjing/astro-full-stack-starter/cache/adapters/cloudflare";
+import { getCloudflareD1Env } from "@/db/client";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+const runtimeEnv = getCloudflareD1Env();
+const runId = sanitizeRunId(Astro.request.headers.get("x-loadtest-run-id") ?? "manual");
+const action = Astro.url.searchParams.get("lock");
+const probeKey = `loadtest:${runId}:cache-probe`;
+const lockKey = `loadtest:${runId}:cache-lock-demo`;
+const probeValue = {
+    ok: true,
+    runId,
+    storedAt: new Date().toISOString(),
+};
+
+interface CacheProbeResult {
+    consistency: string;
+    error: string | null;
+    key: string;
+    lockSupported: boolean;
+    name: string;
+    status: string;
+    value: string;
+}
+
+const results: CacheProbeResult[] = [];
+let lockStatus = "idle";
+let lockReleaseMode = "-";
+
+if (runtimeEnv.CACHE_KV) {
+    const kvCache = createCloudflareKvCacheStore(runtimeEnv.CACHE_KV as CloudflareKvNamespaceLike);
+    results.push(
+        await probeCache(kvCache, "Cloudflare KV", { cacheTtlSeconds: 30, ttlSeconds: 60 })
+    );
+} else {
+    results.push(
+        createMissingResult("Cloudflare KV", "global-eventual", false, "CACHE_KV binding 未配置。")
+    );
+}
+
+const runtimeCache = (globalThis as { caches?: { default?: CloudflareRuntimeCacheLike } }).caches
+    ?.default;
+
+if (runtimeCache) {
+    const cacheApiStore = createCloudflareCacheApiStore(runtimeCache, {
+        baseUrl: Astro.url.origin,
+    });
+    results.push(await probeCache(cacheApiStore, "Cache API", { ttlSeconds: 120 }));
+} else {
+    results.push(
+        createMissingResult(
+            "Cache API",
+            "edge-local",
+            false,
+            "caches.default 在当前 runtime 未配置。"
+        )
+    );
+}
+
+if (runtimeEnv.CACHE_OBJECT) {
+    const durableObjectCache = createCloudflareDurableObjectCacheStore(
+        runtimeEnv.CACHE_OBJECT as CloudflareCacheNamespace
+    );
+    results.push(await probeCache(durableObjectCache, "Durable Object", { ttlSeconds: 60 }));
+
+    if (action === "acquire") {
+        const lock = await durableObjectCache.lock?.acquire(lockKey, {
+            ttlSeconds: 60,
+        });
+        lockStatus = lock ? "acquired" : "busy";
+        lockReleaseMode = lock ? "ttl" : "-";
+    } else if (action === "withLock") {
+        const result = await durableObjectCache.lock?.withLock(
+            lockKey,
+            async () => ({
+                ok: true,
+                releaseMode: "auto",
+            }),
+            {
+                ttlSeconds: 60,
+            }
+        );
+        lockStatus = result ? "acquired" : "busy";
+        lockReleaseMode = result ? "auto" : "-";
+    }
+} else {
+    results.push(
+        createMissingResult(
+            "Durable Object",
+            "strong-per-key",
+            true,
+            "CACHE_OBJECT binding 未配置。"
+        )
+    );
+}
+
+function sanitizeRunId(value: string) {
+    return value.replace(/[^a-zA-Z0-9:_-]/g, "-").slice(0, 80) || "manual";
+}
+
+function createMissingResult(
+    name: string,
+    consistency: string,
+    lockSupported: boolean,
+    message: string
+): CacheProbeResult {
+    return {
+        consistency,
+        error: message,
+        key: probeKey,
+        lockSupported,
+        name,
+        status: "binding_missing",
+        value: "-",
+    };
+}
+
+async function probeCache(
+    cache: ReturnType<
+        | typeof createCloudflareKvCacheStore
+        | typeof createCloudflareCacheApiStore
+        | typeof createCloudflareDurableObjectCacheStore
+    >,
+    name: string,
+    options: {
+        cacheTtlSeconds?: number;
+        ttlSeconds: number;
+    }
+): Promise<CacheProbeResult> {
+    try {
+        await cache.set(probeKey, probeValue, {
+            ttlSeconds: options.ttlSeconds,
+        });
+        const value = await cache.get<typeof probeValue>(probeKey, {
+            cacheTtlSeconds: options.cacheTtlSeconds,
+        });
+
+        return {
+            consistency: cache.consistency,
+            error: null,
+            key: probeKey,
+            lockSupported: Boolean(cache.lock),
+            name,
+            status: "ok",
+            value: value ? JSON.stringify(value) : "-",
+        };
+    } catch (error) {
+        return {
+            consistency: cache.consistency,
+            error: error instanceof Error ? error.message : `${name} cache 探针失败。`,
+            key: probeKey,
+            lockSupported: Boolean(cache.lock),
+            name,
+            status: "error",
+            value: "-",
+        };
+    }
+}
+---
+
+<BaseLayout title="Cache Test">
+    <section class="space-y-8">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                Cache Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                Cloudflare Cache 示例
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面用统一 cache contract 展示 Workers KV、Cache API 和 Durable Objects。KV
+                提供全球最终一致缓存；需要全局强一致时使用 Durable Objects。
+            </p>
+        </div>
+
+        <section class="grid gap-4 lg:grid-cols-3">
+            {
+                results.map((result) => (
+                    <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                        <p class="text-sm font-medium tracking-[0.3em] text-primary uppercase">
+                            {result.name}
+                        </p>
+                        <h2 class="mt-4 text-2xl font-semibold">{result.consistency}</h2>
+                        <dl class="mt-5 grid gap-3 text-sm text-muted-foreground">
+                            <div>
+                                <dt class="font-medium text-foreground">status</dt>
+                                <dd>{result.status}</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-foreground">lock_supported</dt>
+                                <dd>{String(result.lockSupported)}</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-foreground">key</dt>
+                                <dd class="font-mono break-all">{result.key}</dd>
+                            </div>
+                            <div>
+                                <dt class="font-medium text-foreground">value</dt>
+                                <dd class="font-mono break-all">{result.value}</dd>
+                            </div>
+                        </dl>
+                        {result.error ? (
+                            <p class="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-sm/7 text-amber-700 dark:text-amber-200">
+                                {result.error}
+                            </p>
+                        ) : null}
+                    </div>
+                ))
+            }
+        </section>
+
+        <section class="grid gap-4 lg:grid-cols-3">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-primary uppercase">KV</p>
+                <h2 class="mt-4 text-2xl font-semibold">global-eventual</h2>
+                <p class="mt-3 text-sm/7 text-muted-foreground">
+                    Workers KV 适合读多写少的全局缓存。KV
+                    无法保证全局强一致，跨数据中心可见性会有传播延迟。
+                </p>
+            </div>
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-primary uppercase">Cache API</p>
+                <h2 class="mt-4 text-2xl font-semibold">edge-local</h2>
+                <p class="mt-3 text-sm/7 text-muted-foreground">
+                    单可用区缓存。独立费用为 0，请求与 CPU 按 Workers 计划计量。
+                </p>
+            </div>
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-primary uppercase">
+                    Durable Objects
+                </p>
+                <h2 class="mt-4 text-2xl font-semibold">strong-per-key</h2>
+                <p class="mt-3 text-sm/7 text-muted-foreground">
+                    默认按 key 路由到固定 Durable Object；单 namespace 实例模式可表达
+                    strong-namespace。
+                </p>
+            </div>
+        </section>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <p class="text-sm font-medium tracking-[0.3em] text-primary uppercase">
+                        lock demo
+                    </p>
+                    <h2 class="mt-3 text-2xl font-semibold">Durable Object 60 秒锁任务</h2>
+                </div>
+                <div class="flex flex-wrap gap-3">
+                    <a
+                        class="rounded-lg border bg-background px-4 py-2 text-sm font-medium text-foreground transition hover:bg-accent hover:text-accent-foreground"
+                        href="/test/cache?lock=acquire"
+                    >
+                        acquire
+                    </a>
+                    <a
+                        class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                        href="/test/cache?lock=withLock"
+                    >
+                        withLock
+                    </a>
+                </div>
+            </div>
+            <dl class="mt-6 grid gap-3 text-sm text-muted-foreground md:grid-cols-[160px_1fr]">
+                <dt class="font-medium text-foreground">lock_key</dt>
+                <dd class="font-mono break-all">{lockKey}</dd>
+                <dt class="font-medium text-foreground">lock_status</dt>
+                <dd>{lockStatus}</dd>
+                <dt class="font-medium text-foreground">release_mode</dt>
+                <dd>{lockReleaseMode}</dd>
+            </dl>
+        </section>
+    </section>
+</BaseLayout>

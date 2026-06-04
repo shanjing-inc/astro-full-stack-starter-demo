@@ -1,0 +1,43 @@
+---
+import { CheckCircle2Icon } from "lucide-react";
+
+import { LogoutActions } from "@/components/super-admin/logout-actions";
+import BaseLayout from "@/layouts/base-layout.astro";
+import { auth } from "@/lib/auth";
+import { appendAuthCookies } from "@shanjing/astro-full-stack-starter/super-admin";
+
+const authResponse = await auth.api.signOut({
+    headers: Astro.request.headers,
+    asResponse: true,
+});
+
+appendAuthCookies(authResponse.headers, Astro.response.headers);
+---
+
+<BaseLayout title="Logged Out">
+    <section class="flex min-h-[calc(100vh-5rem)] items-center justify-center">
+        <div class="w-full max-w-xl">
+            <div class="rounded-lg border bg-card text-card-foreground shadow-sm">
+                <div
+                    class="flex flex-col items-center gap-5 px-6 py-8 text-center sm:px-8 sm:py-10"
+                >
+                    <div
+                        class="flex size-12 items-center justify-center rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300"
+                    >
+                        <CheckCircle2Icon className="size-6" aria-hidden="true" />
+                    </div>
+                    <div class="space-y-2">
+                        <p class="text-sm font-medium text-muted-foreground">Super Admin</p>
+                        <h1 class="text-2xl font-semibold tracking-normal">已退出登录</h1>
+                        <p class="mx-auto max-w-sm text-sm/6 text-muted-foreground">
+                            当前管理员会话已安全结束，可以返回网站首页或重新进入后台。
+                        </p>
+                    </div>
+                </div>
+                <div class="border-t bg-muted/30 px-6 py-5 sm:px-8">
+                    <LogoutActions client:load />
+                </div>
+            </div>
+        </div>
+    </section>
+</BaseLayout>
