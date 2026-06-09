@@ -1,0 +1,522 @@
+---
+import type { RowDataPacket } from "mysql2";
+
+import { and, count, desc, gte, lt, sql } from "drizzle-orm";
+
+import { getDb, getMysqlPool } from "@/db/client";
+import { shop, shopStatusEnum } from "@/db/schemas";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+import type { NewShop } from "@/db/schemas";
+
+const RANDOM_SHOP_ACTION = "create-random-shop";
+const RANDOM_SHOP_CREATED_PARAM = "createdShop";
+const RANDOM_SHOP_LIMIT_PARAM = "randomShopLimit";
+const RANDOM_SHOP_DAILY_LIMIT = 5;
+
+interface ConnectionSummary extends RowDataPacket {
+    connected: number;
+    currentTimestamp: Date | string;
+    currentUser: string | null;
+    databaseName: string | null;
+    sessionTimeZone: string;
+    utcTimestamp: Date | string;
+}
+
+interface ShopCreatedAtRawRow extends RowDataPacket {
+    createdAtRaw: string | null;
+    id: number;
+}
+
+function createRandomCode() {
+    const randomValue = Math.min(Math.floor(Math.random() * 60_466_176), 60_466_175);
+
+    return randomValue.toString(36).padStart(5, "0");
+}
+
+function createTimestampSlugPart(now: Date) {
+    return now.toISOString().replace(/\D/g, "").slice(0, 14);
+}
+
+function pickRandomStatus() {
+    const statusIndex = Math.min(
+        Math.floor(Math.random() * shopStatusEnum.length),
+        shopStatusEnum.length - 1
+    );
+
+    return shopStatusEnum[statusIndex] ?? "draft";
+}
+
+function createRandomShopInput(now = new Date()): NewShop {
+    const randomCode = createRandomCode();
+
+    return {
+        name: `Demo Shop ${randomCode.toUpperCase()}`,
+        slug: `demo-shop-${createTimestampSlugPart(now)}-${randomCode}`,
+        status: pickRandomStatus(),
+    };
+}
+
+let connectionError: string | null = null;
+let connectionSummary: ConnectionSummary | null = null;
+let shopError: string | null = null;
+let shopCreatedAtRawError: string | null = null;
+let shopRows: Array<typeof shop.$inferSelect> = [];
+let shopCreatedAtRawById = new Map<number, string>();
+let randomShopNotice: { message: string; tone: "error" | "success" | "warning" } | null = null;
+
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+
+    if (formData.get("action") === RANDOM_SHOP_ACTION) {
+        try {
+            const db = getDb();
+            const [todayShopCountRow] = await db
+                .select({
+                    value: count(),
+                })
+                .from(shop)
+                .where(
+                    and(
+                        gte(shop.createdAt, sql<Date>`CURRENT_DATE`),
+                        lt(shop.createdAt, sql<Date>`DATE_ADD(CURRENT_DATE, INTERVAL 1 DAY)`)
+                    )
+                );
+            const todayShopCount = todayShopCountRow?.value ?? 0;
+
+            if (todayShopCount >= RANDOM_SHOP_DAILY_LIMIT) {
+                const redirectUrl = new URL(Astro.url);
+
+                redirectUrl.search = "";
+                redirectUrl.searchParams.set(RANDOM_SHOP_LIMIT_PARAM, "1");
+
+                return new Response(null, {
+                    status: 303,
+                    headers: {
+                        location: `${redirectUrl.pathname}${redirectUrl.search}`,
+                    },
+                });
+            }
+
+            const randomShopInput = createRandomShopInput();
+
+            await db.insert(shop).values(randomShopInput);
+
+            const redirectUrl = new URL(Astro.url);
+
+            redirectUrl.search = "";
+            redirectUrl.searchParams.set(RANDOM_SHOP_CREATED_PARAM, randomShopInput.name);
+
+            return new Response(null, {
+                status: 303,
+                headers: {
+                    location: `${redirectUrl.pathname}${redirectUrl.search}`,
+                },
+            });
+        } catch (error) {
+            randomShopNotice = {
+                message: error instanceof Error ? error.message : "随机店铺新增失败。",
+                tone: "error",
+            };
+        }
+    }
+}
+
+try {
+    const mysqlPool = getMysqlPool();
+    const [rows] = await mysqlPool.query<ConnectionSummary[]>(
+        [
+            "select 1 as connected",
+            "current_user() as currentUser",
+            "database() as databaseName",
+            "@@session.time_zone as sessionTimeZone",
+            "CURRENT_TIMESTAMP as currentTimestamp",
+            "DATE_FORMAT(UTC_TIMESTAMP, '%Y-%m-%dT%H:%i:%sZ') as utcTimestamp",
+        ].join(", ")
+    );
+
+    connectionSummary = rows[0] ?? null;
+} catch (error) {
+    connectionError = error instanceof Error ? error.message : "MySQL 原生连接测试失败。";
+}
+
+try {
+    const db = getDb();
+    shopRows = await db.select().from(shop).orderBy(desc(shop.id)).limit(5);
+} catch (error) {
+    shopError = error instanceof Error ? error.message : "Drizzle 查询测试失败。";
+}
+
+if (shopRows.length > 0) {
+    try {
+        const mysqlPool = getMysqlPool();
+        const [shopCreatedAtRawRows] = await mysqlPool.query<ShopCreatedAtRawRow[]>(
+            [
+                "select",
+                "id,",
+                "CAST(created_at AS CHAR) as createdAtRaw",
+                "from shop",
+                "order by id desc",
+                "limit 5",
+            ].join(" ")
+        );
+
+        shopCreatedAtRawById = new Map(
+            shopCreatedAtRawRows
+                .filter((row) => row.createdAtRaw)
+                .map((row) => [row.id, row.createdAtRaw as string])
+        );
+    } catch (error) {
+        shopCreatedAtRawError =
+            error instanceof Error ? error.message : "数据库原始 createdAt 读取失败。";
+    }
+}
+
+const isMysqlTimeZoneTableError = connectionError
+    ? ["load MySQL time zone tables", "Unknown or incorrect time zone", "mysql.time_zone"].some(
+          (messagePart) => connectionError.includes(messagePart)
+      )
+    : false;
+const createdShopName = Astro.url.searchParams.get(RANDOM_SHOP_CREATED_PARAM);
+const isRandomShopLimitReached = Astro.url.searchParams.get(RANDOM_SHOP_LIMIT_PARAM) === "1";
+
+if (!randomShopNotice && createdShopName) {
+    randomShopNotice = {
+        message: `已新增随机店铺：${createdShopName}`,
+        tone: "success",
+    };
+}
+
+if (!randomShopNotice && isRandomShopLimitReached) {
+    randomShopNotice = {
+        message: `今天已新增 ${RANDOM_SHOP_DAILY_LIMIT} 个店铺，请明天再试。`,
+        tone: "warning",
+    };
+}
+---
+
+<BaseLayout title="Database Test">
+    <section class="space-y-8">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                Database Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                MySQL 与 Drizzle 连通性测试
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面会先用 <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground"
+                    >mysql2</code
+                >
+                直接探测数据库连接，再用 Drizzle 尝试读取
+                <code class="rounded-sm bg-muted px-2 py-1 text-sm text-foreground">shop</code>
+                表前 5 条记录。这样可以同时确认"连接已通"和"schema 已可用"。
+            </p>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    mysql2
+                </p>
+                {
+                    connectionSummary ? (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                连接状态：
+                                <span class="ml-2 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                                    connected
+                                </span>
+                            </p>
+                            <p class="break-all">
+                                当前用户：
+                                <span class="ml-2 text-foreground">
+                                    {connectionSummary.currentUser ?? "-"}
+                                </span>
+                            </p>
+                            <p class="break-all">
+                                当前数据库：
+                                <span class="ml-2 text-foreground">
+                                    {connectionSummary.databaseName ?? "-"}
+                                </span>
+                            </p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p class="font-medium">mysql2 原生连接未通过。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{connectionError}</p>
+                            {isMysqlTimeZoneTableError && (
+                                <div class="mt-4 space-y-3 text-destructive/90">
+                                    <p>
+                                        MySQL 使用 IANA 时区需要先加载 time zone tables。可在 MySQL
+                                        服务器环境执行：
+                                    </p>
+                                    <pre class="overflow-x-auto rounded-md bg-background/80 p-3 text-xs text-foreground">
+                                        <code>
+                                            mysql_tzinfo_to_sql /usr/share/zoneinfo | mysql -u root
+                                            -p mysql
+                                        </code>
+                                    </pre>
+                                    <p>
+                                        Docker 镜像需要先确保容器内存在
+                                        <code class="mx-1 rounded-sm bg-background/80 px-1 text-foreground">
+                                            /usr/share/zoneinfo
+                                        </code>
+                                        。加载后重新建立连接，再用下面的 SQL 验证：
+                                    </p>
+                                    <pre class="overflow-x-auto rounded-md bg-background/80 p-3 text-xs text-foreground">
+                                        <code>
+                                            SELECT CONVERT_TZ('2026-06-07 12:00:00', 'UTC',
+                                            'Asia/Shanghai'); SET time_zone = 'Asia/Shanghai';
+                                            SELECT @@session.time_zone, CURRENT_TIMESTAMP,
+                                            UTC_TIMESTAMP;
+                                        </code>
+                                    </pre>
+                                </div>
+                            )}
+                        </div>
+                    )
+                }
+            </div>
+
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    drizzle
+                </p>
+                {
+                    shopError ? (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p class="font-medium">Drizzle 读取 shop 表失败。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{shopError}</p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                Drizzle 初始化状态：
+                                <span class="ml-2 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                                    ready
+                                </span>
+                            </p>
+                            <p>
+                                当前读取记录数：
+                                <span class="ml-2 text-foreground">{shopRows.length}</span>
+                            </p>
+                            <p class="text-muted-foreground">
+                                如果这里是 0，说明表已可读，但当前还没有测试数据。
+                            </p>
+                        </div>
+                    )
+                }
+            </div>
+        </div>
+
+        <section class="space-y-4">
+            <div class="grid gap-4">
+                <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                    <h2 class="text-lg font-semibold">MySQL 会话时间</h2>
+                    {
+                        connectionSummary ? (
+                            <div class="mt-4 grid gap-6 text-sm text-muted-foreground lg:grid-cols-2">
+                                <div class="space-y-3">
+                                    <p class="break-all">
+                                        Session time_zone：
+                                        <span class="ml-2 text-foreground">
+                                            {connectionSummary.sessionTimeZone}
+                                        </span>
+                                    </p>
+                                    <p class="break-all">
+                                        CURRENT_TIMESTAMP：
+                                        <span class="ml-2 text-foreground">
+                                            {String(connectionSummary.currentTimestamp)}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="space-y-3">
+                                    <p class="break-all">
+                                        浏览器时区：
+                                        <span class="ml-2 text-foreground" data-browser-timezone>
+                                            detecting
+                                        </span>
+                                    </p>
+                                    <p class="break-all">
+                                        浏览器时间：
+                                        <span
+                                            class="ml-2 text-foreground"
+                                            data-browser-current-time
+                                            data-utc-instant={String(
+                                                connectionSummary.utcTimestamp
+                                            )}
+                                        >
+                                            detecting
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div class="mt-4 grid gap-6 text-sm text-muted-foreground lg:grid-cols-2">
+                                <p class="lg:col-span-2">
+                                    MySQL 连接成功后显示数据库会话时区和当前时间。
+                                </p>
+                                <div class="space-y-3 lg:col-start-2">
+                                    <p class="break-all">
+                                        浏览器时区：
+                                        <span class="ml-2 text-foreground" data-browser-timezone>
+                                            detecting
+                                        </span>
+                                    </p>
+                                    <p class="break-all">
+                                        浏览器时间：
+                                        <span
+                                            class="ml-2 text-foreground"
+                                            data-browser-current-time
+                                        >
+                                            detecting
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        )
+                    }
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-semibold">shop 表预览</h2>
+                    <p class="mt-2 text-sm/7 text-muted-foreground">
+                        最多展示最新 5 条数据，方便确认 Drizzle schema 与数据库结构已经对齐。
+                    </p>
+                </div>
+                <form method="post">
+                    <input name="action" type="hidden" value={RANDOM_SHOP_ACTION} />
+                    <button
+                        class="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                        type="submit"
+                    >
+                        新增随机店铺
+                    </button>
+                </form>
+            </div>
+            <p class="mt-2 text-sm/7 text-muted-foreground">
+                每个数据库自然日最多新增 5 个随机店铺，统计范围为当天所有 shop 记录。
+            </p>
+            {
+                shopCreatedAtRawError && (
+                    <p class="mt-2 text-sm/7 text-yellow-700">
+                        数据库原始 createdAt 读取失败：{shopCreatedAtRawError}
+                    </p>
+                )
+            }
+
+            {
+                randomShopNotice && (
+                    <div
+                        class:list={[
+                            "mt-6 rounded-xl border p-4 text-sm",
+                            randomShopNotice.tone === "success" &&
+                                "border-primary/20 bg-primary/10 text-primary",
+                            randomShopNotice.tone === "warning" &&
+                                "border-yellow-500/30 bg-yellow-500/10 text-yellow-700",
+                            randomShopNotice.tone === "error" &&
+                                "border-destructive/20 bg-destructive/10 text-destructive",
+                        ]}
+                        role="status"
+                    >
+                        {randomShopNotice.message}
+                    </div>
+                )
+            }
+
+            {
+                shopRows.length > 0 ? (
+                    <div class="mt-6 overflow-x-auto rounded-xl border">
+                        <table class="min-w-full text-left text-sm text-foreground">
+                            <thead class="bg-muted/50 text-muted-foreground">
+                                <tr class="border-b">
+                                    <th class="p-3 font-medium">id</th>
+                                    <th class="p-3 font-medium">name</th>
+                                    <th class="p-3 font-medium">slug</th>
+                                    <th class="p-3 font-medium">status</th>
+                                    <th class="p-3 font-medium">createdAt（数据库原始值）</th>
+                                    <th class="p-3 font-medium">createdAt（本地时间）</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {shopRows.map((row) => (
+                                    <tr class="border-b bg-card last:border-b-0">
+                                        <td class="p-3">{row.id}</td>
+                                        <td class="p-3">{row.name}</td>
+                                        <td class="p-3">{row.slug}</td>
+                                        <td class="p-3">{row.status}</td>
+                                        <td class="p-3">
+                                            {shopCreatedAtRawById.get(row.id) ?? "-"}
+                                        </td>
+                                        <td class="p-3">
+                                            {row.createdAt ? (
+                                                <span
+                                                    data-browser-local-time
+                                                    data-utc-instant={row.createdAt.toISOString()}
+                                                >
+                                                    {row.createdAt.toISOString()}
+                                                </span>
+                                            ) : (
+                                                "-"
+                                            )}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div class="mt-6 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        暂无可展示的 shop 数据。
+                    </div>
+                )
+            }
+        </section>
+    </section>
+
+    <script>
+        const timezoneTarget = document.querySelector("[data-browser-timezone]");
+        const browserCurrentTimeTarget = document.querySelector("[data-browser-current-time]");
+        const localTimeTargets = document.querySelectorAll("[data-browser-local-time]");
+        const browserLocale = navigator.languages?.[0] ?? navigator.language ?? "zh-CN";
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const localTimeFormatter = new Intl.DateTimeFormat(browserLocale, {
+            dateStyle: "medium",
+            hour12: false,
+            timeStyle: "medium",
+        });
+
+        if (timezoneTarget) {
+            timezoneTarget.textContent = timezone;
+        }
+
+        if (browserCurrentTimeTarget) {
+            const utcInstant = browserCurrentTimeTarget.getAttribute("data-utc-instant");
+            const date = utcInstant ? new Date(utcInstant) : new Date();
+
+            browserCurrentTimeTarget.textContent = Number.isNaN(date.getTime())
+                ? "-"
+                : localTimeFormatter.format(date);
+        }
+
+        localTimeTargets.forEach((localTimeTarget) => {
+            const utcInstant = localTimeTarget.getAttribute("data-utc-instant");
+            const date = utcInstant ? new Date(utcInstant) : new Date();
+
+            localTimeTarget.textContent = Number.isNaN(date.getTime())
+                ? "-"
+                : localTimeFormatter.format(date);
+        });
+    </script>
+</BaseLayout>

@@ -32,9 +32,9 @@ export default defineConfig({
                         path: "/api/graphql/member",
                         adapter: "./src/graphql/adapters/member.ts",
                     },
-                    superAdmin: {
-                        path: "/api/graphql/super-admin",
-                        adapter: "./src/graphql/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/graphql/admin",
+                        adapter: "./src/graphql/adapters/admin.ts",
                     },
                 },
             },
@@ -46,11 +46,32 @@ export default defineConfig({
                     },
                 },
             },
-            superAdmin: {
-                path: "/super-admin",
-                adapter: "./src/spa/super-admin/adapter.ts",
-                graphqlEndpoint: "superAdmin",
-                websocketEndpoint: "superAdmin",
+            dashboard: {
+                auth: "./src/dashboards/auth.ts",
+                instances: {
+                    admin: {
+                        title: "Admin",
+                        path: "/replace-with-your-admin-path",
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        websocketEndpoint: "admin",
+                        publicAuthRoutes: ["login", "install"],
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                    },
+                    member: {
+                        title: "Member",
+                        path: "/member",
+                        app: "./src/dashboards/member/app.tsx",
+                        graphqlEndpoint: "member",
+                        websocketEndpoint: "member",
+                        publicAuthRoutes: ["login"],
+                        requirePermission: {
+                            dashboard: ["access:member"],
+                        },
+                    },
+                },
             },
             websocket: {
                 endpoints: {
@@ -62,15 +83,20 @@ export default defineConfig({
                         path: "/api/websocket/member",
                         adapter: "./src/websocket/adapters/member.ts",
                     },
-                    superAdmin: {
-                        path: "/api/websocket/super-admin",
-                        adapter: "./src/websocket/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/websocket/admin",
+                        adapter: "./src/websocket/adapters/admin.ts",
                     },
                 },
             },
         }),
     ],
     vite: {
+        server: {
+            fs: {
+                allow: ["../.."],
+            },
+        },
         build: {
             sourcemap: "hidden",
         },

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
     createGraphqlErrorResponse,
+    parseDateTimeInput,
     serializeDateTime,
 } from "@shanjing/astro-full-stack-starter/graphql/utils";
 import { cn, getInitials } from "@/lib/utils";
@@ -32,10 +33,55 @@ describe("shared runtime and utility helpers", () => {
         expect(getInitials(null, null)).toBe("U");
     });
 
-    it("serializes dates and keeps string date values unchanged", () => {
-        expect(serializeDateTime("2026-05-07T00:00:00.000Z")).toBe("2026-05-07T00:00:00.000Z");
+    it("serializes DateTime values as second-level UTC ISO strings", () => {
+        expect(serializeDateTime("2026-05-07T00:00:00.000Z")).toBe("2026-05-07T00:00:00Z");
+        expect(serializeDateTime("2026-05-07T00:00:00.987Z")).toBe("2026-05-07T00:00:00Z");
         expect(serializeDateTime(new Date("2026-05-07T00:00:00.000Z"))).toBe(
-            "2026-05-07T00:00:00.000Z"
+            "2026-05-07T00:00:00Z"
+        );
+    });
+
+    it("rejects invalid DateTime output", () => {
+        expect(() => serializeDateTime("invalid-date")).toThrow("Invalid DateTime output.");
+        expect(() => serializeDateTime(new Date("invalid-date"))).toThrow(
+            "Invalid DateTime output."
+        );
+    });
+
+    it("parses GraphQL DateTime input with explicit timezone", () => {
+        vi.stubEnv("TZ", "");
+
+        expect(parseDateTimeInput("2026-06-08T10:01:02Z").toISOString()).toBe(
+            "2026-06-08T10:01:02.000Z"
+        );
+        expect(parseDateTimeInput("2026-06-08 10:01:02+08:00").toISOString()).toBe(
+            "2026-06-08T02:01:02.000Z"
+        );
+    });
+
+    it("rejects GraphQL DateTime input without timezone in UTC mode", () => {
+        vi.stubEnv("TZ", "");
+
+        expect(() => parseDateTimeInput("2026-06-08 10:01:02")).toThrow(
+            "DateTime input must include Z or an explicit UTC offset."
+        );
+    });
+
+    it("rejects GraphQL DateTime input without timezone for UTC aliases", () => {
+        for (const timeZone of ["Etc/UTC", "GMT", "Etc/GMT"]) {
+            vi.stubEnv("TZ", timeZone);
+
+            expect(() => parseDateTimeInput("2026-06-08 10:01:02")).toThrow(
+                "DateTime input must include Z or an explicit UTC offset."
+            );
+        }
+    });
+
+    it("uses non-UTC TZ for legacy GraphQL DateTime input", () => {
+        vi.stubEnv("TZ", "Asia/Shanghai");
+
+        expect(parseDateTimeInput("2026-06-08 10:01:02").toISOString()).toBe(
+            "2026-06-08T02:01:02.000Z"
         );
     });
 
@@ -55,10 +101,10 @@ describe("shared runtime and utility helpers", () => {
     it("reads environment values from process and Deno fallbacks", () => {
         expect(getEnvVar("MODE")).toBeDefined();
 
-        vi.stubEnv("MYSQL_URL", "mysql://user:pass@localhost:3306/app");
+        vi.stubEnv("DATABASE_URL", "mysql://user:pass@localhost:3306/app");
         vi.stubEnv("QUEUE_JOB_RETENTION_COUNT", "12");
 
-        expect(getEnvVar("MYSQL_URL")).toBe("mysql://user:pass@localhost:3306/app");
+        expect(getEnvVar("DATABASE_URL")).toBe("mysql://user:pass@localhost:3306/app");
         expect(getEnvVar("QUEUE_JOB_RETENTION_COUNT")).toBe("12");
         expect(resolvePositiveIntegerEnv("QUEUE_JOB_RETENTION_COUNT", 50)).toBe(12);
         expect(resolvePositiveIntegerEnv("MISSING_POSITIVE_INTEGER", 50)).toBe(50);

@@ -18,9 +18,8 @@ declare global {
         readonly APP_ORIGIN?: string;
         readonly BETTER_AUTH_ALLOWED_HOSTS?: string;
         readonly BETTER_AUTH_SECRET?: string;
+        readonly DATABASE_URL?: string;
         readonly LOG_SQL?: string;
-        readonly MYSQL_MODE?: "default" | "planetscale";
-        readonly MYSQL_URL?: string;
         readonly QUEUE_EXECUTION_RECORD_TTL_SECONDS?: string;
         readonly QUEUE_JOB_RETENTION_COUNT?: string;
         readonly QUEUE_JOB_RETENTION_SECONDS?: string;
@@ -28,6 +27,7 @@ declare global {
         readonly REDIS_URL?: string;
         readonly SENTRY_DSN?: string;
         readonly SENTRY_RELEASE?: string;
+        readonly TZ?: string;
         readonly WEBSOCKET_ALLOWED_ORIGINS?: string;
         readonly WEBSOCKET_IDLE_TIMEOUT_SECONDS?: string;
         readonly WEBSOCKET_MAX_CONNECTIONS?: string;

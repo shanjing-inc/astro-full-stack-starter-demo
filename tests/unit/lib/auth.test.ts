@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { betterAuthMock, drizzleAdapterMock } = vi.hoisted(() => ({
+const { adminMock, betterAuthMock, drizzleAdapterMock } = vi.hoisted(() => ({
+    adminMock: vi.fn((_config: unknown) => "admin-plugin"),
     betterAuthMock: vi.fn((config: unknown) => ({ config })),
     drizzleAdapterMock: vi.fn(() => "drizzle-adapter"),
 }));
@@ -14,7 +15,7 @@ vi.mock("better-auth/adapters/drizzle", () => ({
 }));
 
 vi.mock("better-auth/plugins/admin", () => ({
-    admin: vi.fn(() => "admin-plugin"),
+    admin: adminMock,
 }));
 
 vi.mock("better-auth/plugins/bearer", () => ({
@@ -29,10 +30,24 @@ vi.mock("@/db/client", () => ({
     },
 }));
 
+type AccessRole = {
+    statements: Record<string, string[]>;
+};
+
+type AdminPluginConfig = {
+    roles: {
+        admin: AccessRole;
+        member: AccessRole;
+        owner: AccessRole;
+        user: AccessRole;
+    };
+};
+
 describe("auth runtime config", () => {
     beforeEach(() => {
         vi.resetModules();
         vi.unstubAllEnvs();
+        adminMock.mockClear();
         betterAuthMock.mockClear();
         drizzleAdapterMock.mockClear();
     });
@@ -55,7 +70,37 @@ describe("auth runtime config", () => {
             provider: "mysql",
             schema: "db-schema",
         });
+        expect(adminMock).toHaveBeenCalledWith({
+            roles: {
+                admin: expect.anything(),
+                member: expect.anything(),
+                owner: expect.anything(),
+                user: expect.anything(),
+            },
+        });
         expect(getAuth()).toBe(auth);
+    });
+
+    it("allows owner, admin, and member roles to access their dashboard entries", async () => {
+        vi.stubEnv("BETTER_AUTH_ALLOWED_HOSTS", "localhost:*");
+        vi.stubEnv("BETTER_AUTH_SECRET", "test-secret-with-at-least-32-characters");
+
+        await import("@/lib/auth");
+
+        const adminConfig = adminMock.mock.calls.at(-1)?.[0] as AdminPluginConfig;
+
+        expect(adminConfig.roles.admin.statements.dashboard).toEqual([
+            "access:admin",
+            "access:member",
+        ]);
+        expect(adminConfig.roles.owner.statements.dashboard).toEqual([
+            "access:admin",
+            "access:member",
+        ]);
+        expect(adminConfig.roles.owner.statements.system).toEqual(["owner"]);
+        expect(adminConfig.roles.admin.statements.system).toEqual([]);
+        expect(adminConfig.roles.member.statements.dashboard).toEqual(["access:member"]);
+        expect(adminConfig.roles.user.statements.dashboard).toEqual([]);
     });
 
     it("throws when allowed hosts are missing", async () => {

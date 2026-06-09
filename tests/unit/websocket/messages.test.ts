@@ -11,7 +11,7 @@ import {
 import { dispatchWebSocketMessage } from "@shanjing/astro-full-stack-starter/websocket/protocol/dispatcher";
 import { adapter as memberWebSocketAdapter } from "@/websocket/adapters/member";
 import { adapter as publicWebSocketAdapter } from "@/websocket/adapters/public";
-import { adapter as superAdminWebSocketAdapter } from "@/websocket/adapters/super-admin";
+import { adapter as adminWebSocketAdapter } from "@/websocket/adapters/admin";
 import { createWebSocketBadRequestResponse } from "@shanjing/astro-full-stack-starter/websocket/responses";
 import {
     createWebSocketForbiddenResponse,
@@ -243,7 +243,7 @@ describe("websocket messages", () => {
             {} as never,
             handlerOptions
         );
-        const superAdminHandlers = superAdminWebSocketAdapter.endpoint.createHandlers(
+        const adminHandlers = adminWebSocketAdapter.endpoint.createHandlers(
             {} as never,
             handlerOptions
         );
@@ -257,10 +257,10 @@ describe("websocket messages", () => {
             })
         ).toBe(false);
         expect(memberHandlers.handleMessage({ type: "custom" })).toBe(false);
-        expect(superAdminHandlers.handleMessage({ type: "custom" })).toBe(false);
+        expect(adminHandlers.handleMessage({ type: "custom" })).toBe(false);
         publicHandlers.dispose();
         memberHandlers.dispose();
-        superAdminHandlers.dispose();
+        adminHandlers.dispose();
     });
 
     it("creates standard WebSocket HTTP responses", async () => {

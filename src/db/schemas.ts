@@ -1,15 +1,7 @@
 import { sql } from "drizzle-orm";
-import {
-    index,
-    int,
-    mysqlTable,
-    text,
-    timestamp,
-    uniqueIndex,
-    varchar,
-} from "drizzle-orm/mysql-core";
+import { index, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
-import { createDbSchema } from "@shanjing/astro-full-stack-starter/db/mysql/schemas";
+import { createDbSchema, zonedDateTime } from "@shanjing/astro-full-stack-starter/db/mysql/schemas";
 
 export {
     account,
@@ -29,10 +21,10 @@ export const shop = mysqlTable(
         name: varchar("name", { length: 255 }).notNull(),
         slug: varchar("slug", { length: 255 }).notNull(),
         status: varchar("status", { length: 32, enum: shopStatusEnum }).notNull().default("draft"),
-        createdAt: timestamp("created_at", { mode: "date" })
+        createdAt: zonedDateTime("created_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`),
-        updatedAt: timestamp("updated_at", { mode: "date" })
+        updatedAt: zonedDateTime("updated_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`)
             .onUpdateNow(),
@@ -57,10 +49,10 @@ export const product = mysqlTable(
         status: varchar("status", { length: 32, enum: productStatusEnum })
             .notNull()
             .default("draft"),
-        createdAt: timestamp("created_at", { mode: "date" })
+        createdAt: zonedDateTime("created_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`),
-        updatedAt: timestamp("updated_at", { mode: "date" })
+        updatedAt: zonedDateTime("updated_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`)
             .onUpdateNow(),
@@ -90,10 +82,10 @@ export const order = mysqlTable(
             .notNull()
             .default("pending"),
         remark: text("remark"),
-        createdAt: timestamp("created_at", { mode: "date" })
+        createdAt: zonedDateTime("created_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`),
-        updatedAt: timestamp("updated_at", { mode: "date" })
+        updatedAt: zonedDateTime("updated_at")
             .notNull()
             .default(sql`CURRENT_TIMESTAMP`)
             .onUpdateNow(),

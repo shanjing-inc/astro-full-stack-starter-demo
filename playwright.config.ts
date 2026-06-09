@@ -28,8 +28,10 @@ export default defineConfig({
         stdout: "pipe",
         stderr: "pipe",
         env: {
-            MYSQL_URL: "mysql://root:password@127.0.0.1:3306/test_astro_with_deno",
+            DATABASE_URL:
+                "mysql://root:password@127.0.0.1:3306/test_astro_with_deno?drizzleMode=default",
             REDIS_URL: "redis://127.0.0.1:6379/0",
+            TZ: "UTC",
         },
     },
 });

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "@/layouts/base-layout.astro";
 
-type WebSocketEndpointKey = "public" | "member" | "super-admin";
+type WebSocketEndpointKey = "public" | "member" | "admin";
 
 interface WebSocketEndpointOption {
     label: string;
@@ -22,9 +22,9 @@ const ENDPOINT_OPTIONS: WebSocketEndpointOption[] = [
         value: "member",
     },
     {
-        label: "Super Admin",
-        path: "/api/websocket/super-admin",
-        value: "super-admin",
+        label: "Admin",
+        path: "/api/websocket/admin",
+        value: "admin",
     },
 ];
 const defaultWebSocketEndpoint =
@@ -214,7 +214,7 @@ const defaultWebSocketEndpoint =
 </BaseLayout>
 
 <script>
-    type WebSocketEndpointKeyClient = "public" | "member" | "super-admin";
+    type WebSocketEndpointKeyClient = "public" | "member" | "admin";
 
     interface WebSocketEndpointOptionClient {
         label: string;

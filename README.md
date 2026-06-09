@@ -47,11 +47,11 @@ pnpm check
 After starting the dev server, open the pages from `src/pages/test/*.astro` to exercise demo features in the browser:
 
 - `/test/cache`: writes short-lived probe data through the Redis cache adapter, then shows TTL readback and lock behavior through the lock action links.
-- `/test/graphql`: sends preset or custom requests to the member and super-admin GraphQL endpoints.
-- `/test/mysql`: checks the native MySQL connection, verifies the Drizzle provider, and previews the `shop` table.
+- `/test/graphql`: sends preset or custom requests to the member and admin GraphQL endpoints.
+- `/test/database`: checks the native MySQL connection, verifies the Drizzle provider, and previews the `shop` table.
 - `/test/queue`: dispatches BullMQ demo jobs by queue, shows the current request result, and displays recent Redis-backed execution records.
 - `/test/sse`: connects to the public SSE endpoint and shows incoming server-sent events.
-- `/test/websocket`: tests public, member, and super-admin WebSocket endpoints with ping, echo, custom messages, and server push.
+- `/test/websocket`: tests public, member, and admin WebSocket endpoints with ping, echo, custom messages, and server push.
 
 These pages are runnable integration examples for local manual checks and for understanding how the demo wires starter-level features into the Deno runtime.
 

@@ -10,7 +10,7 @@ import {
 } from "@/observability/sentry-context";
 import { sanitizeSentryExtra } from "@/observability/sentry-sanitize";
 
-type GraphQLEndpoint = "member" | "super-admin";
+type GraphQLEndpoint = "member" | "admin";
 
 function isAsyncIterable(value: unknown): value is AsyncIterable<ExecutionResult> {
     return typeof value === "object" && value !== null && Symbol.asyncIterator in value;

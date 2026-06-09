@@ -45,15 +45,15 @@ function loadEnvFile(filePath: string) {
 loadEnvFile(resolve(process.cwd(), "../../.env"));
 loadEnvFile(resolve(process.cwd(), ".env"));
 
-if (!process.env.MYSQL_URL) {
-    throw new Error("Missing MYSQL_URL for Drizzle config.");
+if (!process.env.DATABASE_URL) {
+    throw new Error("Missing DATABASE_URL for Drizzle config.");
 }
 export default defineConfig({
     dialect: "mysql",
     schema: "./src/db/schemas.ts",
     out: "./drizzle",
     dbCredentials: {
-        url: process.env.MYSQL_URL,
+        url: process.env.DATABASE_URL,
     },
     strict: true,
     verbose: true,

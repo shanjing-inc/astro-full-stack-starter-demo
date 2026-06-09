@@ -1,0 +1,13 @@
+.astro/
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+.env*
+!.env.example
+.wrangler/
+coverage/
+dist/
+node_modules/
+test-results/
+playwright-report/
+pnpm-debug.log*

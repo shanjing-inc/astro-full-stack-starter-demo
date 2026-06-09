@@ -6,11 +6,13 @@ import { pathToFileURL } from "node:url";
 
 import { printSchema } from "graphql";
 
+process.env.TZ ??= "UTC";
+
 const workspaceRoot = resolve(import.meta.dirname, "..");
 const srcRoot = resolve(workspaceRoot, "src");
 const generatedDir = resolve(workspaceRoot, "src/graphql/generated");
-const superAdminSchemaOutputPath = resolve(generatedDir, "super-admin-schema.graphql");
-const superAdminSchemaPath = resolve(workspaceRoot, "src/graphql/schemas/super-admin.ts");
+const adminSchemaOutputPath = resolve(generatedDir, "admin-schema.graphql");
+const adminSchemaPath = resolve(workspaceRoot, "src/graphql/schemas/admin.ts");
 const memberSchemaOutputPath = resolve(generatedDir, "member-schema.graphql");
 const memberSchemaPath = resolve(workspaceRoot, "src/graphql/schemas/member.ts");
 const supportedExtensions = [".ts", ".tsx", ".mts", ".cts", ".js", ".mjs", ".cjs"];
@@ -57,13 +59,13 @@ registerHooks({
     },
 });
 
-const [{ superAdminSchema }, { memberSchema }] = await Promise.all([
-    import(pathToFileURL(superAdminSchemaPath).href),
+const [{ adminSchema }, { memberSchema }] = await Promise.all([
+    import(pathToFileURL(adminSchemaPath).href),
     import(pathToFileURL(memberSchemaPath).href),
 ]);
 
 await mkdir(generatedDir, { recursive: true });
 await Promise.all([
-    writeFile(superAdminSchemaOutputPath, `${printSchema(superAdminSchema)}\n`, "utf8"),
+    writeFile(adminSchemaOutputPath, `${printSchema(adminSchema)}\n`, "utf8"),
     writeFile(memberSchemaOutputPath, `${printSchema(memberSchema)}\n`, "utf8"),
 ]);

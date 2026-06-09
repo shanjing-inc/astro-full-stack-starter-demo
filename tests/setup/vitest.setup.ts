@@ -1,6 +1,8 @@
 import "@testing-library/jest-dom/vitest";
 import { setPersistentEngine } from "@nanostores/persistent";
 
+process.env.TZ ??= "UTC";
+
 function createMemoryStorage(): Storage {
     const store = new Map<string, string>();
 

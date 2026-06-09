@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    buildOrderRelationWhere,
+    parseOrderWhereInput,
+    registerOrderTypes,
+} from "@/graphql/types/order";
+import {
     buildShopOrderBy,
     buildShopRelationWhere,
     parseCreateShopSetInput,
@@ -22,9 +27,11 @@ import {
     offsetArgSchema,
     registerCommonTypes,
     stringFiltersSchema,
-} from "@/graphql/types/common";
+} from "@shanjing/astro-full-stack-starter/graphql/types/common";
 
 type CommonTypesMockResult = {
+    dateTime: string;
+    dateTimeFilters: string;
     json: {
         parseLiteral: (value: never) => unknown;
         parseValue: (value: unknown) => unknown;
@@ -45,15 +52,23 @@ type ShopTypesMockResult = {
     shopItem: {
         fields: {
             createdAt: {
-                resolve: (shopRecord: { createdAt: Date | string }) => string;
+                expose: string;
+                type: string;
             };
             products: unknown;
             updatedAt: {
-                resolve: (shopRecord: { updatedAt: Date | string }) => string;
+                expose: string;
+                type: string;
             };
         };
     };
     updateShopSetInput: {
+        fields: Record<string, unknown>;
+    };
+};
+
+type OrderTypesMockResult = {
+    orderFilters: {
         fields: Record<string, unknown>;
     };
 };
@@ -268,6 +283,10 @@ describe("shop GraphQL types", () => {
                 expose: "string",
                 name,
             }),
+            expose: (name: string, config: unknown) => ({
+                ...(config as Record<string, unknown>),
+                expose: name,
+            }),
             field: (config: unknown) => config,
             relation: (name: string) => ({
                 relation: name,
@@ -290,6 +309,8 @@ describe("shop GraphQL types", () => {
             }),
         };
         const commonTypes = {
+            dateTime: "DateTime",
+            dateTimeFilters: "DateTimeFilters",
             innerOrder: "InnerOrder",
             intFilters: "IntFilters",
             json: "JSON",
@@ -317,16 +338,90 @@ describe("shop GraphQL types", () => {
             required: true,
         });
         expect(shopTypes.updateShopSetInput.fields.status).toBe("string");
-        expect(shopTypes.shopItem.fields.createdAt.resolve({ createdAt: "2026-05-07" })).toBe(
-            "2026-05-07"
-        );
-        expect(
-            shopTypes.shopItem.fields.updatedAt.resolve({
-                updatedAt: new Date("2026-05-07T00:00:00.000Z"),
-            })
-        ).toBe("2026-05-07T00:00:00.000Z");
+        expect(shopTypes.shopItem.fields.createdAt.type).toBe("DateTime");
+        expect(shopTypes.shopItem.fields.updatedAt.type).toBe("DateTime");
+        expect(shopTypes.shopItem.fields.createdAt.expose).toBe("createdAt");
+        expect(shopTypes.shopItem.fields.updatedAt.expose).toBe("updatedAt");
         expect(shopTypes.shopItem.fields.products).toEqual({
             relation: "products",
+        });
+    });
+
+    it("supports createdAt DateTime filters for order queries", () => {
+        const createdAtFilters = {
+            gte: "2026-06-01T00:00:00Z",
+            lt: "2026-06-09T00:00:00Z",
+        };
+
+        const parsedWhere = parseOrderWhereInput({
+            createdAt: createdAtFilters,
+        });
+
+        expect(parsedWhere.createdAt?.gte).toBeInstanceOf(Date);
+        expect(parsedWhere.createdAt?.lt).toBeInstanceOf(Date);
+        expect(buildOrderRelationWhere(parsedWhere)).toEqual({
+            createdAt: {
+                gte: new Date("2026-06-01T00:00:00.000Z"),
+                lt: new Date("2026-06-09T00:00:00.000Z"),
+            },
+        });
+
+        const fieldBuilder = {
+            expose: (name: string, config: unknown) => ({
+                ...(config as Record<string, unknown>),
+                expose: name,
+            }),
+            exposeID: (name: string) => ({
+                expose: "id",
+                name,
+            }),
+            exposeInt: (name: string) => ({
+                expose: "int",
+                name,
+            }),
+            exposeString: (name: string) => ({
+                expose: "string",
+                name,
+            }),
+            field: (config: unknown) => config,
+            int: (config?: unknown) => config ?? "int",
+            relation: (name: string) => ({
+                relation: name,
+            }),
+            string: (config?: unknown) => config ?? "string",
+        };
+        const builder = {
+            drizzleObject: (
+                _tableName: string,
+                config: { fields: (t: typeof fieldBuilder) => unknown }
+            ) => ({
+                fields: config.fields(fieldBuilder),
+                name: "OrderItem",
+            }),
+            inputRef: (name: string) => ({
+                implement: ({ fields }: { fields: (t: typeof fieldBuilder) => unknown }) => ({
+                    fields: fields(fieldBuilder),
+                    name,
+                }),
+            }),
+        };
+        const commonTypes = {
+            dateTime: "DateTime",
+            dateTimeFilters: "DateTimeFilters",
+            innerOrder: "InnerOrder",
+            intFilters: "IntFilters",
+            json: "JSON",
+            orderDirection: "OrderDirection",
+            stringFilters: "StringFilters",
+        };
+
+        const orderTypes = registerOrderTypes(
+            builder as never,
+            commonTypes as never
+        ) as unknown as OrderTypesMockResult;
+
+        expect(orderTypes.orderFilters.fields.createdAt).toEqual({
+            type: "DateTimeFilters",
         });
     });
 });

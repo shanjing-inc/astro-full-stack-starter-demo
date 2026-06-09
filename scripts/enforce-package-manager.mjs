@@ -32,6 +32,8 @@ function resolvePackageManager() {
 }
 
 const packageManager = resolvePackageManager();
+const nodeMajorVersion = Number.parseInt(process.versions.node.split(".")[0] ?? "0", 10);
+const needsCorepackInstall = Number.isFinite(nodeMajorVersion) && nodeMajorVersion >= 25;
 
 function isPnpmInvocation() {
     if (userAgent.startsWith("pnpm/")) {
@@ -102,21 +104,36 @@ if (hasPnpmStructure && !isCorepackManaged()) {
     console.error("");
     console.error("当前 pnpm 不是由 Corepack 管理，可能导致版本不一致。");
     console.error("");
-    console.error("请按以下步骤启用 Corepack：");
+    console.error("请按以下步骤切换到 Corepack 管理的 pnpm：");
     console.error("");
-    console.error("1. 启用 Corepack：");
+    console.error("1. 请确认当前环境使用 Node.js >=24.0.0：");
+    console.error("    node -v");
+    console.error("");
+
+    let stepNumber = 2;
+
+    if (needsCorepackInstall) {
+        console.error(`${stepNumber}. 安装 Corepack：`);
+        console.error("    npm install -g corepack");
+        console.error("");
+        stepNumber += 1;
+    }
+
+    console.error(`${stepNumber}. 启用 Corepack 代理：`);
     console.error("    corepack enable");
     console.error("");
-    console.error("2. 请确认当前环境使用 Node.js >=24.0.0");
-    console.error("    （Corepack 已内置在 Node.js 中）");
+    stepNumber += 1;
+    console.error(`${stepNumber}. 安装并激活项目指定的 pnpm 版本：`);
+    console.error(`    corepack install --global ${packageManager}`);
     console.error("");
-    console.error("3. 然后重新运行：");
+    stepNumber += 1;
+    console.error(`${stepNumber}. 重新运行：`);
     console.error("    pnpm install");
     console.error("");
     console.error("项目配置的包管理器版本：");
     console.error(`    ${packageManager}`);
     console.error("");
-    console.error("Corepack 会自动下载并验证此版本，确保团队一致性。");
+    console.error("Corepack 会下载并验证此版本，确保团队一致性。");
     console.error("");
 
     process.exit(1);

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "@/layouts/base-layout.astro";
 
-type GraphQLEndpointKey = "member" | "super-admin";
+type GraphQLEndpointKey = "member" | "admin";
 
 interface GraphQLEndpointOption {
     label: string;
@@ -26,9 +26,9 @@ const ENDPOINT_OPTIONS: GraphQLEndpointOption[] = [
         value: "member",
     },
     {
-        label: "Super Admin",
-        path: "/api/graphql/super-admin",
-        value: "super-admin",
+        label: "Admin",
+        path: "/api/graphql/admin",
+        value: "admin",
     },
 ];
 const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
@@ -44,6 +44,8 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                     name
                     slug
                     status
+                    createdAt
+                    updatedAt
                 }
             }
         `,
@@ -52,7 +54,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                 limit: 5,
                 orderBy: {
                     id: {
-                        direction: "asc",
+                        direction: "desc",
                         priority: 1,
                     },
                 },
@@ -161,8 +163,8 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
         ),
     },
     {
-        description: "创建一个 shop 示例。这个预设会自动切到 super-admin 端点。",
-        endpoint: "super-admin",
+        description: "创建一个 shop 示例。这个预设会自动切到 admin 端点。",
+        endpoint: "admin",
         label: "CreateShop",
         operationType: "mutation",
         query: /* GraphQL */ `
@@ -214,7 +216,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                 GraphQL 双端点测试页
             </h1>
             <p class="max-w-3xl leading-8 text-muted-foreground">
-                这个页面支持在 member 和 super-admin
+                这个页面支持在 member 和 admin
                 端点之间切换。左侧预设会自动带出推荐端点，右侧可以继续手动修改 query 和 variables。
             </p>
         </div>
@@ -414,12 +416,12 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     interface GraphQLEndpointOptionClient {
         label: string;
         path: string;
-        value: "member" | "super-admin";
+        value: "member" | "admin";
     }
 
     interface GraphQLTestPresetClient {
         description: string;
-        endpoint: "member" | "super-admin";
+        endpoint: "member" | "admin";
         label: string;
         operationType: "mutation" | "query";
         query: string;
@@ -463,9 +465,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
         throw new Error("GraphQL test page initialization failed.");
     }
 
-    const defaultEndpoint = (pageRoot.dataset.defaultEndpoint ?? "member") as
-        | "member"
-        | "super-admin";
+    const defaultEndpoint = (pageRoot.dataset.defaultEndpoint ?? "member") as "member" | "admin";
     const endpointOptions = JSON.parse(
         pageRoot.dataset.endpoints ?? "[]"
     ) as GraphQLEndpointOptionClient[];
@@ -478,14 +478,14 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     const statusIndicator = statusText;
     const variablesEditor = variablesTextarea;
 
-    function getEndpointPath(endpointKey: "member" | "super-admin") {
+    function getEndpointPath(endpointKey: "member" | "admin") {
         return (
             endpointOptions.find((option) => option.value === endpointKey)?.path ??
             "/api/graphql/member"
         );
     }
 
-    function syncEndpoint(endpointKey: "member" | "super-admin") {
+    function syncEndpoint(endpointKey: "member" | "admin") {
         endpointPicker.value = endpointKey;
         endpointPathDisplay.textContent = getEndpointPath(endpointKey);
         graphiqlAnchor.href = getEndpointPath(endpointKey);
@@ -505,7 +505,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     }
 
     endpointPicker.addEventListener("change", () => {
-        syncEndpoint(endpointPicker.value as "member" | "super-admin");
+        syncEndpoint(endpointPicker.value as "member" | "admin");
     });
 
     defaultPresetButton.addEventListener("click", () => {
@@ -525,7 +525,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     });
 
     async function executeGraphQLRequest() {
-        const endpoint = getEndpointPath(endpointPicker.value as "member" | "super-admin");
+        const endpoint = getEndpointPath(endpointPicker.value as "member" | "admin");
         const query = queryEditor.value.trim();
         const variablesText = variablesEditor.value.trim();
 

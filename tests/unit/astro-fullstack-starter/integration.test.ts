@@ -9,11 +9,10 @@ import { createGraphQLSetup } from "@shanjing/astro-full-stack-starter/graphql";
 import {
     betterAuthAdminPlugin,
     appendAuthCookies,
-    createSuperAdminMiddleware,
-    defineSuperAdminAdapter,
-    defineSuperAdminAuthPlugin,
+    createDashboardMiddleware,
+    defineDashboardAuthAdapter,
     roleAuthPlugin,
-} from "@shanjing/astro-full-stack-starter/super-admin";
+} from "@shanjing/astro-full-stack-starter/dashboard";
 import {
     getEnabledAstroFullstackStarterSetups,
     runAstroFullstackStarterSetup,
@@ -29,14 +28,15 @@ import {
     websocketUpgradeRequestStorage,
 } from "@shanjing/astro-full-stack-starter/websocket/platforms/vite";
 import {
-    createSuperAdminRouteRegistry,
-    createSuperAdminNavMain,
-    defineSuperAdminRoutes,
-    getSuperAdminRouteMeta,
-    getSuperAdminRouteMetas,
-    toSuperAdminRoutePath,
-} from "@shanjing/astro-full-stack-starter/super-admin/client";
-import { projectSuperAdminRoutes } from "@/spa/super-admin/routes";
+    createDashboardRouteRegistry,
+    createDashboardNavMain,
+    defineDashboardRoutes,
+    getDashboardRouteMeta,
+    getDashboardRouteMetas,
+    toDashboardRoutePath,
+} from "@shanjing/astro-full-stack-starter/dashboard/client";
+import { memberRoutes } from "@/dashboards/member/routes";
+import { adminRoutes } from "@/dashboards/admin/routes";
 
 import type { IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
@@ -53,38 +53,66 @@ describe("starter package Astro integration", () => {
         const middlewarePath = fileURLToPath(
             new URL("../../../src/middleware.ts", import.meta.url)
         );
-        const superAdminAdapterPath = fileURLToPath(
-            new URL("../../../src/spa/super-admin/adapter.ts", import.meta.url)
+        const dashboardAuthPath = fileURLToPath(
+            new URL("../../../src/dashboards/auth.ts", import.meta.url)
+        );
+        const memberSchemaPath = fileURLToPath(
+            new URL("../../../src/graphql/schemas/member.ts", import.meta.url)
         );
         const installPath = fileURLToPath(
-            new URL("../../../src/pages/super-admin/install.astro", import.meta.url)
+            new URL(
+                "../../../src/pages/replace-with-your-admin-path/install.astro",
+                import.meta.url
+            )
         );
         const loginPath = fileURLToPath(
-            new URL("../../../src/pages/super-admin/login.astro", import.meta.url)
+            new URL("../../../src/pages/replace-with-your-admin-path/login.astro", import.meta.url)
+        );
+        const memberLoginPath = fileURLToPath(
+            new URL("../../../src/pages/member/login.astro", import.meta.url)
         );
         const logoutPath = fileURLToPath(
-            new URL("../../../src/pages/super-admin/logout.astro", import.meta.url)
+            new URL("../../../src/pages/replace-with-your-admin-path/logout.astro", import.meta.url)
         );
         const astroConfig = readFileSync(astroConfigPath, "utf8");
         const middleware = readFileSync(middlewarePath, "utf8");
-        const superAdminAdapter = readFileSync(superAdminAdapterPath, "utf8");
+        const dashboardAuth = readFileSync(dashboardAuthPath, "utf8");
+        const memberSchema = readFileSync(memberSchemaPath, "utf8");
 
         expect(astroConfig).toContain(
             'import astroFullstackStarter from "@shanjing/astro-full-stack-starter/integration";'
         );
         expect(astroConfig).toContain("astroFullstackStarter({");
         expect(astroConfig).toContain('adapter: "./src/graphql/adapters/member.ts"');
-        expect(astroConfig).toContain('adapter: "./src/graphql/adapters/super-admin.ts"');
-        expect(astroConfig).toContain('adapter: "./src/spa/super-admin/adapter.ts"');
-        expect(astroConfig).toContain('path: "/super-admin"');
-        expect(astroConfig).toContain('graphqlEndpoint: "superAdmin"');
+        expect(astroConfig).toContain('adapter: "./src/graphql/adapters/admin.ts"');
+        expect(astroConfig).toContain('auth: "./src/dashboards/auth.ts"');
+        expect(astroConfig).toContain('app: "./src/dashboards/admin/app.tsx"');
+        expect(astroConfig).toContain('app: "./src/dashboards/member/app.tsx"');
+        expect(astroConfig).toContain('path: "/replace-with-your-admin-path"');
+        expect(astroConfig).toContain('path: "/member"');
+        expect(astroConfig).toContain('graphqlEndpoint: "admin"');
+        expect(astroConfig).toContain('graphqlEndpoint: "member"');
         expect(astroConfig).toContain('adapter: "./src/websocket/adapters/public.ts"');
-        expect(astroConfig).toContain('adapter: "./src/websocket/adapters/super-admin.ts"');
-        expect(middleware).not.toContain("@/middleware/super-admin");
-        expect(superAdminAdapter).toContain("betterAuthAdminPlugin");
-        expect(superAdminAdapter).not.toContain("roleAuthPlugin");
+        expect(astroConfig).toContain('adapter: "./src/websocket/adapters/admin.ts"');
+        expect(middleware).not.toContain("@/middleware/admin");
+        expect(dashboardAuth).toContain("betterAuthAdminPlugin");
+        expect(dashboardAuth).not.toContain("roleAuthPlugin");
+        expect(memberSchema).toContain("registerDashboardCurrentUserGraphQLSchema");
+        expect(memberSchema).toContain("registerListOrdersQuery");
+        expect(memberSchema).toContain("registerListProductsQuery");
+        expect(memberSchema).toContain("registerListShopsQuery");
+        expect(memberSchema).not.toContain("registerCreateOrderMutation");
+        expect(memberSchema).not.toContain("registerDeleteOrderMutation");
+        expect(memberSchema).not.toContain("registerUpdateOrderMutation");
+        expect(memberSchema).not.toContain("registerCreateProductMutation");
+        expect(memberSchema).not.toContain("registerDeleteProductMutation");
+        expect(memberSchema).not.toContain("registerUpdateProductMutation");
         expect(existsSync(installPath)).toBe(true);
         expect(existsSync(loginPath)).toBe(true);
+        expect(readFileSync(memberLoginPath, "utf8")).toContain('action="/member/login"');
+        expect(readFileSync(memberLoginPath, "utf8")).toContain(
+            'headers.set("location", "/member")'
+        );
         expect(existsSync(logoutPath)).toBe(true);
     });
 
@@ -98,13 +126,10 @@ describe("starter package Astro integration", () => {
         expect(config.queue).toEqual({
             enabled: false,
         });
-        expect(config.superAdmin).toEqual({
-            adapter: null,
-            disabledBuiltinRouteIds: [],
+        expect(config.dashboard).toEqual({
+            auth: null,
             enabled: false,
-            path: "/super-admin",
-            graphqlEndpoint: "superAdmin",
-            websocketEndpoint: null,
+            instances: {},
         });
         expect(config.websocket).toEqual({
             devBridge: false,
@@ -126,10 +151,19 @@ describe("starter package Astro integration", () => {
             queue: {
                 enabled: false,
             },
-            superAdmin: {
-                adapter: "./src/spa/super-admin/adapter.ts",
-                disabledBuiltinRouteIds: ["queue.dashboard"],
-                path: "/admin",
+            dashboard: {
+                auth: "./src/dashboards/auth.ts",
+                instances: {
+                    admin: {
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        path: "/replace-with-your-admin-path",
+                        publicAuthRoutes: ["login", "install"],
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                    },
+                },
             },
             websocket: {
                 endpoints: {
@@ -147,13 +181,23 @@ describe("starter package Astro integration", () => {
             adapter: "./src/graphql/adapters/member.ts",
         });
         expect(config.queue.enabled).toBe(false);
-        expect(config.superAdmin).toEqual({
-            adapter: "./src/spa/super-admin/adapter.ts",
-            disabledBuiltinRouteIds: ["queue.dashboard"],
+        expect(config.dashboard).toEqual({
+            auth: "./src/dashboards/auth.ts",
             enabled: true,
-            path: "/admin",
-            graphqlEndpoint: "superAdmin",
-            websocketEndpoint: null,
+            instances: {
+                admin: {
+                    app: "./src/dashboards/admin/app.tsx",
+                    graphqlEndpoint: "admin",
+                    id: "admin",
+                    path: "/replace-with-your-admin-path",
+                    publicAuthRoutes: ["login", "install"],
+                    requirePermission: {
+                        dashboard: ["access:admin"],
+                    },
+                    title: "admin",
+                    websocketEndpoint: null,
+                },
+            },
         });
         expect(config.websocket).toEqual({
             devBridge: true,
@@ -171,24 +215,34 @@ describe("starter package Astro integration", () => {
         const config = normalizeAstroFullstackStarterConfig({
             graphql: {
                 endpoints: {
-                    superAdmin: {
-                        path: "/api/graphql/super-admin",
-                        adapter: "./src/graphql/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/graphql/admin",
+                        adapter: "./src/graphql/adapters/admin.ts",
                     },
                 },
             },
             queue: {
                 enabled: true,
             },
-            superAdmin: {
-                adapter: "./src/spa/super-admin/adapter.ts",
-                websocketEndpoint: "superAdmin",
+            dashboard: {
+                auth: "./src/dashboards/auth.ts",
+                instances: {
+                    admin: {
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        path: "/replace-with-your-admin-path",
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                        websocketEndpoint: "admin",
+                    },
+                },
             },
             websocket: {
                 endpoints: {
-                    superAdmin: {
-                        path: "/api/websocket/super-admin",
-                        adapter: "./src/websocket/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/websocket/admin",
+                        adapter: "./src/websocket/adapters/admin.ts",
                     },
                 },
             },
@@ -201,7 +255,7 @@ describe("starter package Astro integration", () => {
             "graphql",
             "queue",
             "websocket",
-            "superAdmin",
+            "dashboard",
         ]);
     });
 
@@ -242,15 +296,15 @@ describe("starter package Astro integration", () => {
         const setup = createGraphQLSetup({
             enabled: true,
             endpoints: {
-                "super-admin": {
-                    path: "/api/graphql/super-admin",
-                    adapter: "./src/graphql/adapters/super-admin.ts",
+                "admin-dashboard": {
+                    path: "/api/graphql/admin",
+                    adapter: "./src/graphql/adapters/admin.ts",
                 },
             },
         });
 
         expect(() => setup.setup({} as AstroFullstackStarterSetupContext)).toThrow(
-            'GraphQL endpoint name "super-admin" must be camelCase'
+            'GraphQL endpoint name "admin-dashboard" must be camelCase'
         );
     });
 
@@ -292,6 +346,62 @@ describe("starter package Astro integration", () => {
         );
     });
 
+    it("generates GraphQL entrypoints with package batching defaults and adapter overrides", () => {
+        const projectRoot = new URL("../../../", import.meta.url);
+        const codegenParent = new URL(".astro/", projectRoot);
+        mkdirSync(codegenParent, {
+            recursive: true,
+        });
+        const codegenRoot = mkdtempSync(fileURLToPath(new URL("starter-graphql-", codegenParent)));
+        const injectedRoutes: Parameters<AstroFullstackStarterSetupContext["injectRoute"]>[0][] =
+            [];
+        const setup = createGraphQLSetup({
+            enabled: true,
+            endpoints: {
+                member: {
+                    path: "/api/graphql/member",
+                    adapter: "./src/graphql/adapters/member.ts",
+                },
+            },
+        });
+
+        try {
+            setup.setup({
+                config: {
+                    root: projectRoot,
+                },
+                createCodegenDir() {
+                    return pathToFileURL(`${codegenRoot}/`);
+                },
+                injectRoute(route) {
+                    injectedRoutes.push(route);
+                },
+            } as AstroFullstackStarterSetupContext);
+
+            expect(injectedRoutes).toEqual([
+                {
+                    entrypoint: pathToFileURL(`${codegenRoot}/graphql-member.mjs`),
+                    pattern: "/api/graphql/member",
+                    prerender: false,
+                },
+            ]);
+            expect(readFileSync(injectedRoutes[0].entrypoint as URL, "utf8")).toContain(
+                'const defaultBatching = {"limit":10};\n' +
+                    "\n" +
+                    "const handleGraphQLRequest = createGraphQLYogaHandler({\n" +
+                    "    ...adapter,\n" +
+                    "    batching: adapter.batching ?? defaultBatching,\n" +
+                    '    graphqlEndpoint: "/api/graphql/member",\n' +
+                    "});\n"
+            );
+        } finally {
+            rmSync(codegenRoot, {
+                force: true,
+                recursive: true,
+            });
+        }
+    });
+
     it("rejects WebSocket endpoints with missing adapter", () => {
         const setup = createWebSocketSetup({
             devBridge: true,
@@ -325,9 +435,9 @@ describe("starter package Astro integration", () => {
                 devBridge: true,
                 enabled: true,
                 endpoints: {
-                    superAdmin: {
-                        path: "/api/websocket/super-admin",
-                        adapter: "./src/websocket/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/websocket/admin",
+                        adapter: "./src/websocket/adapters/admin.ts",
                     },
                 },
             });
@@ -346,19 +456,19 @@ describe("starter package Astro integration", () => {
 
             expect(injectedRoutes).toEqual([
                 {
-                    entrypoint: pathToFileURL(`${codegenRoot}/websocket-superAdmin.mjs`),
-                    pattern: "/api/websocket/super-admin",
+                    entrypoint: pathToFileURL(`${codegenRoot}/websocket-admin.mjs`),
+                    pattern: "/api/websocket/admin",
                     prerender: false,
                 },
             ]);
             expect(injectedRoutes[0].entrypoint).toBeInstanceOf(URL);
             expect(readFileSync(injectedRoutes[0].entrypoint as URL, "utf8")).toContain(
                 'import { createWebSocketEndpointAdapterRoute } from "@shanjing/astro-full-stack-starter/websocket/adapter";\n' +
-                    'import { adapter } from "../../src/websocket/adapters/super-admin.ts";\n' +
+                    'import { adapter } from "../../src/websocket/adapters/admin.ts";\n' +
                     "\n" +
                     "export const GET = createWebSocketEndpointAdapterRoute({\n" +
                     "    adapter,\n" +
-                    '    name: "superAdmin",\n' +
+                    '    name: "admin",\n' +
                     "});\n"
             );
         } finally {
@@ -369,9 +479,21 @@ describe("starter package Astro integration", () => {
         }
     });
 
-    it("rejects super-admin setup without an adapter", async () => {
+    it("rejects dashboard setup without shared auth", async () => {
         const integration = astroFullstackStarter({
-            superAdmin: {},
+            dashboard: {
+                auth: "",
+                instances: {
+                    admin: {
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        path: "/replace-with-your-admin-path",
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                    },
+                },
+            },
         });
 
         await expect(
@@ -380,13 +502,23 @@ describe("starter package Astro integration", () => {
                     root: new URL("../../../", import.meta.url),
                 },
             } as AstroFullstackStarterSetupContext)
-        ).rejects.toThrow("Super-admin integration requires a non-empty adapter.");
+        ).rejects.toThrow("Dashboard integration requires a non-empty auth.");
     });
 
-    it("rejects super-admin endpoint references that are not declared", async () => {
+    it("rejects dashboard endpoint references that are not declared", async () => {
         const integration = astroFullstackStarter({
-            superAdmin: {
-                adapter: "./src/spa/super-admin/adapter.ts",
+            dashboard: {
+                auth: "./src/dashboards/auth.ts",
+                instances: {
+                    admin: {
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        path: "/replace-with-your-admin-path",
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                    },
+                },
             },
         });
 
@@ -397,31 +529,41 @@ describe("starter package Astro integration", () => {
                 },
             } as AstroFullstackStarterSetupContext)
         ).rejects.toThrow(
-            'Super-admin GraphQL endpoint "superAdmin" must reference an enabled GraphQL endpoint.'
+            'Dashboard GraphQL endpoint "admin" must reference an enabled GraphQL endpoint.'
         );
     });
 
-    it("pins React dev runtime during super-admin dev dependency optimization", async () => {
+    it("pins React dev runtime during dashboard dev dependency optimization", async () => {
         const projectRoot = new URL("../../../", import.meta.url);
         const codegenParent = new URL(".astro/", projectRoot);
         mkdirSync(codegenParent, {
             recursive: true,
         });
         const codegenRoot = mkdtempSync(
-            fileURLToPath(new URL("starter-super-admin-dev-runtime-", codegenParent))
+            fileURLToPath(new URL("starter-dashboard-dev-runtime-", codegenParent))
         );
         const configUpdates: unknown[] = [];
         const integration = astroFullstackStarter({
             graphql: {
                 endpoints: {
-                    superAdmin: {
-                        path: "/api/graphql/super-admin",
-                        adapter: "./src/graphql/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/graphql/admin",
+                        adapter: "./src/graphql/adapters/admin.ts",
                     },
                 },
             },
-            superAdmin: {
-                adapter: "./src/spa/super-admin/adapter.ts",
+            dashboard: {
+                auth: "./src/dashboards/auth.ts",
+                instances: {
+                    admin: {
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        path: "/replace-with-your-admin-path",
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                    },
+                },
             },
         });
 
@@ -724,14 +866,14 @@ describe("starter package Astro integration", () => {
         );
     });
 
-    it("allows super-admin setup without a WebSocket endpoint reference", async () => {
+    it("allows dashboard setup without a WebSocket endpoint reference", async () => {
         const projectRoot = new URL("../../../", import.meta.url);
         const codegenParent = new URL(".astro/", projectRoot);
         mkdirSync(codegenParent, {
             recursive: true,
         });
         const codegenRoot = mkdtempSync(
-            fileURLToPath(new URL("starter-super-admin-", codegenParent))
+            fileURLToPath(new URL("starter-dashboard-", codegenParent))
         );
         const middlewareEntrypoints: Parameters<
             AstroFullstackStarterSetupContext["addMiddleware"]
@@ -741,14 +883,26 @@ describe("starter package Astro integration", () => {
         const integration = astroFullstackStarter({
             graphql: {
                 endpoints: {
-                    superAdmin: {
-                        path: "/api/graphql/super-admin",
-                        adapter: "./src/graphql/adapters/super-admin.ts",
+                    admin: {
+                        path: "/api/graphql/admin",
+                        adapter: "./src/graphql/adapters/admin.ts",
                     },
                 },
             },
-            superAdmin: {
-                adapter: "./src/spa/super-admin/adapter.ts",
+            dashboard: {
+                auth: "./src/dashboards/auth.ts",
+                instances: {
+                    admin: {
+                        app: "./src/dashboards/admin/app.tsx",
+                        graphqlEndpoint: "admin",
+                        path: "/replace-with-your-admin-path",
+                        publicAuthRoutes: ["login", "install"],
+                        requirePermission: {
+                            dashboard: ["access:admin"],
+                        },
+                        title: "Admin",
+                    },
+                },
             },
         });
 
@@ -777,52 +931,55 @@ describe("starter package Astro integration", () => {
             ).resolves.toBeUndefined();
             expect(injectedRoutes).toEqual([
                 {
-                    entrypoint: pathToFileURL(`${codegenRoot}/graphql-superAdmin.mjs`),
-                    pattern: "/api/graphql/super-admin",
+                    entrypoint: pathToFileURL(`${codegenRoot}/graphql-admin.mjs`),
+                    pattern: "/api/graphql/admin",
                     prerender: false,
                 },
                 {
-                    entrypoint: pathToFileURL(`${codegenRoot}/super-admin-app.astro`),
-                    pattern: "/super-admin",
+                    entrypoint: pathToFileURL(`${codegenRoot}/dashboard-admin-app.astro`),
+                    pattern: "/replace-with-your-admin-path",
                     prerender: false,
                 },
                 {
-                    entrypoint: pathToFileURL(`${codegenRoot}/super-admin-app.astro`),
-                    pattern: "/super-admin/[...slug]",
+                    entrypoint: pathToFileURL(`${codegenRoot}/dashboard-admin-app.astro`),
+                    pattern: "/replace-with-your-admin-path/[...slug]",
                     prerender: false,
                 },
             ]);
             expect(middlewareEntrypoints).toEqual([
                 {
-                    entrypoint: pathToFileURL(`${codegenRoot}/super-admin-middleware.mjs`),
+                    entrypoint: pathToFileURL(`${codegenRoot}/dashboard-middleware.mjs`),
                     order: "post",
                 },
             ]);
             expect(readFileSync(middlewareEntrypoints[0].entrypoint as URL, "utf8")).toContain(
-                'import { createSuperAdminMiddleware } from "@shanjing/astro-full-stack-starter/super-admin";\n' +
-                    'import adapter from "../../src/spa/super-admin/adapter.ts";\n' +
+                'import { createDashboardMiddleware } from "@shanjing/astro-full-stack-starter/dashboard";\n' +
+                    'import auth from "../../src/dashboards/auth.ts";\n' +
                     "\n" +
-                    "export const onRequest = createSuperAdminMiddleware({\n" +
-                    "    adapter,\n" +
-                    '    graphqlPath: "/api/graphql/super-admin",\n' +
-                    '    path: "/super-admin",\n' +
-                    "    websocketPath: null,\n" +
+                    "export const onRequest = createDashboardMiddleware({\n" +
+                    "    auth,\n" +
+                    '    dashboards: [{"graphqlPath":"/api/graphql/admin","id":"admin","path":"/replace-with-your-admin-path","publicAuthRoutes":["login","install"],"requirePermission":{"dashboard":["access:admin"]},"websocketPath":null}],\n' +
                     "});\n"
             );
             expect(
-                readFileSync(pathToFileURL(`${codegenRoot}/super-admin-app.astro`), "utf8")
+                readFileSync(pathToFileURL(`${codegenRoot}/dashboard-admin-app.astro`), "utf8")
             ).toContain(
                 `import "../../src/styles/global.css";\n` +
-                    'import adapter from "../../src/spa/super-admin/adapter.ts";\n' +
-                    'import SuperAdminApp from "../../src/spa/super-admin/app.tsx";\n' +
+                    'import DashboardApp from "../../src/dashboards/admin/app.tsx";\n' +
                     "\n" +
-                    'const pageTitle = adapter.title ?? "Super Admin";'
+                    'const pageTitle = "Admin";'
             );
             expect(
-                readFileSync(pathToFileURL(`${codegenRoot}/super-admin-app.astro`), "utf8")
+                readFileSync(pathToFileURL(`${codegenRoot}/dashboard-admin-app.astro`), "utf8")
             ).toContain(
-                '<SuperAdminApp basePath="/super-admin" graphqlPath="/api/graphql/super-admin" client:only="react" />'
+                '<DashboardApp dashboardId="admin" title="Admin" basePath="/replace-with-your-admin-path" graphqlPath="/api/graphql/admin" client:only="react" />'
             );
+            expect(
+                readFileSync(pathToFileURL(`${codegenRoot}/dashboard-admin-app.astro`), "utf8")
+            ).toContain('const themeStorageKey = "dashboard:admin:theme";');
+            expect(
+                readFileSync(pathToFileURL(`${codegenRoot}/dashboard-admin-app.astro`), "utf8")
+            ).toContain('const fontSizeCookiePrefix = "dashboard-admin-font-size=";');
         } finally {
             rmSync(codegenRoot, {
                 force: true,
@@ -831,8 +988,8 @@ describe("starter package Astro integration", () => {
         }
     });
 
-    it("defines project-owned super-admin adapters and routes", () => {
-        const auth = defineSuperAdminAuthPlugin({
+    it("defines project-owned admin auth and routes", () => {
+        const auth = defineDashboardAuthAdapter({
             async getSession() {
                 return {
                     session: {},
@@ -848,7 +1005,10 @@ describe("starter package Astro integration", () => {
                 };
             },
         });
-        const routes = defineSuperAdminRoutes([
+
+        expect(auth).toBeDefined();
+
+        const routes = defineDashboardRoutes([
             {
                 component: "ShopListPage",
                 id: "shop.list",
@@ -856,10 +1016,7 @@ describe("starter package Astro integration", () => {
                 title: "店铺",
             },
         ]);
-        defineSuperAdminAdapter({
-            auth,
-        });
-        const registry = createSuperAdminRouteRegistry(
+        const registry = createDashboardRouteRegistry(
             [
                 {
                     component: "DashboardPage",
@@ -874,19 +1031,23 @@ describe("starter package Astro integration", () => {
         expect(registry.routes.map((route) => route.id)).toEqual(["dashboard", "shop.list"]);
     });
 
-    it("registers demo business pages as project-owned super-admin routes", () => {
+    it("registers demo business pages as project-owned dashboard routes", () => {
+        const businessRouteIds = ["project.dashboard", "shop.list", "product.list", "order.list"];
+
         expect(
-            projectSuperAdminRoutes.map((route) => ({
-                id: route.id,
-                path: route.path,
-                permission: route.permission,
-            }))
+            adminRoutes
+                .filter((route) => businessRouteIds.includes(route.id))
+                .map((route) => ({
+                    id: route.id,
+                    path: route.path,
+                    permission: route.permission,
+                }))
         ).toEqual([
             {
                 id: "project.dashboard",
                 path: "/",
                 permission: {
-                    superAdmin: ["access"],
+                    dashboard: ["access:admin"],
                 },
             },
             {
@@ -913,8 +1074,74 @@ describe("starter package Astro integration", () => {
         ]);
     });
 
+    it("registers queue routes only in the admin dashboard", () => {
+        expect(adminRoutes.map((route) => route.id)).toEqual(
+            expect.arrayContaining([
+                "queue.dashboard",
+                "queue.schedules",
+                "queue.jobs.failed",
+                "queue.jobs.status",
+                "queue.jobs.detail",
+            ])
+        );
+        expect(adminRoutes.map((route) => route.path)).toEqual(
+            expect.arrayContaining([
+                "/queues",
+                "/queues/schedules",
+                "/queues/jobs/failed",
+                "/queues/jobs/:status",
+                "/queues/jobs/:status/:recordId",
+            ])
+        );
+        expect(memberRoutes.map((route) => route.id)).not.toContain("queue.dashboard");
+    });
+
+    it("registers user routes only in the admin dashboard", () => {
+        expect(adminRoutes.map((route) => route.id)).toEqual(
+            expect.arrayContaining(["user.list", "user.admin"])
+        );
+        expect(adminRoutes.map((route) => route.path)).toEqual(
+            expect.arrayContaining(["/user/list", "/user/admin"])
+        );
+        expect(memberRoutes.map((route) => route.id)).not.toContain("user.list");
+    });
+
+    it("registers read-only business pages in the member dashboard", () => {
+        expect(
+            memberRoutes.map((route) => ({
+                id: route.id,
+                path: route.path,
+                permission: route.permission,
+            }))
+        ).toEqual(
+            expect.arrayContaining([
+                {
+                    id: "member.shop.list",
+                    path: "/shop/list",
+                    permission: {
+                        shop: ["list"],
+                    },
+                },
+                {
+                    id: "member.product.list",
+                    path: "/product/list",
+                    permission: {
+                        product: ["list"],
+                    },
+                },
+                {
+                    id: "member.order.list",
+                    path: "/order/list",
+                    permission: {
+                        order: ["list"],
+                    },
+                },
+            ])
+        );
+    });
+
     it("lets project-owned routes replace package-owned routes by path", () => {
-        const registry = createSuperAdminRouteRegistry(
+        const registry = createDashboardRouteRegistry(
             [
                 {
                     id: "dashboard",
@@ -941,41 +1168,48 @@ describe("starter package Astro integration", () => {
         expect(registry.routes.map((route) => route.id)).not.toContain("dashboard");
     });
 
-    it("derives demo business navigation from project-owned super-admin routes", () => {
+    it("derives demo business navigation from project-owned dashboard routes", () => {
         expect(
-            createSuperAdminNavMain("/super-admin", projectSuperAdminRoutes).map((item) => ({
+            createDashboardNavMain("/admin", adminRoutes).map((item) => ({
                 title: item.title,
                 url: item.url,
             }))
         ).toEqual(
             expect.arrayContaining([
                 {
+                    title: "Dashboard",
+                    url: "/admin",
+                },
+                {
                     title: "店铺",
-                    url: "/super-admin/shop/list",
+                    url: "/admin/shop/list",
                 },
                 {
                     title: "商品",
-                    url: "/super-admin/product/list",
+                    url: "/admin/product/list",
                 },
                 {
                     title: "订单",
-                    url: "/super-admin/order/list",
+                    url: "/admin/order/list",
+                },
+                {
+                    title: "用户",
+                    url: "/admin/user/list",
                 },
             ])
         );
         expect(
-            getSuperAdminRouteMetas("/super-admin", projectSuperAdminRoutes).map(
-                (routeMeta) => routeMeta.url
-            )
+            getDashboardRouteMetas("/admin", adminRoutes).map((routeMeta) => routeMeta.url)
         ).toEqual(
             expect.arrayContaining([
-                "/super-admin/shop/list",
-                "/super-admin/product/list",
-                "/super-admin/order/list",
+                "/admin/shop/list",
+                "/admin/product/list",
+                "/admin/order/list",
+                "/admin/user/list",
             ])
         );
         expect(
-            createSuperAdminNavMain("/console", projectSuperAdminRoutes).map((item) => ({
+            createDashboardNavMain("/console", adminRoutes).map((item) => ({
                 title: item.title,
                 url: item.url,
             }))
@@ -996,9 +1230,7 @@ describe("starter package Astro integration", () => {
             ])
         );
         expect(
-            getSuperAdminRouteMetas("/console", projectSuperAdminRoutes).map(
-                (routeMeta) => routeMeta.url
-            )
+            getDashboardRouteMetas("/console", adminRoutes).map((routeMeta) => routeMeta.url)
         ).toEqual(
             expect.arrayContaining([
                 "/console/shop/list",
@@ -1006,12 +1238,12 @@ describe("starter package Astro integration", () => {
                 "/console/order/list",
             ])
         );
-        expect(toSuperAdminRoutePath("/console/shop/list", "/console")).toBe("shop/list");
+        expect(toDashboardRoutePath("/console/shop/list", "/console")).toBe("shop/list");
     });
 
-    it("rejects duplicate super-admin project routes", () => {
+    it("rejects duplicate dashboard project routes", () => {
         expect(() =>
-            defineSuperAdminRoutes([
+            defineDashboardRoutes([
                 {
                     component: "QueuePage",
                     id: "queue",
@@ -1025,12 +1257,12 @@ describe("starter package Astro integration", () => {
                     title: "Other Queues",
                 },
             ])
-        ).toThrow('Super-admin route id "queue" is duplicated.');
+        ).toThrow('Dashboard route id "queue" is duplicated.');
     });
 
-    it("rejects duplicate browser-side super-admin project routes", () => {
+    it("rejects duplicate browser-side dashboard project routes", () => {
         expect(() =>
-            defineSuperAdminRoutes([
+            defineDashboardRoutes([
                 {
                     component: "QueuePage",
                     id: "queue",
@@ -1044,10 +1276,10 @@ describe("starter package Astro integration", () => {
                     title: "Other Queues",
                 },
             ])
-        ).toThrow('Super-admin route id "queue" is duplicated.');
+        ).toThrow('Dashboard route id "queue" is duplicated.');
     });
 
-    it("derives navigation from supplied package-owned super-admin routes", () => {
+    it("derives navigation from supplied package-owned dashboard routes", () => {
         const builtinRoutes = [
             {
                 id: "queue.dashboard",
@@ -1079,31 +1311,31 @@ describe("starter package Astro integration", () => {
         ];
 
         expect(
-            getSuperAdminRouteMetas("/super-admin", [], builtinRoutes).map((route) => route.url)
+            getDashboardRouteMetas("/admin", [], builtinRoutes).map((route) => route.url)
         ).toEqual(
             expect.arrayContaining([
-                "/super-admin/queues",
-                "/super-admin/queues/schedules",
-                "/super-admin/queues/jobs/failed",
+                "/admin/queues",
+                "/admin/queues/schedules",
+                "/admin/queues/jobs/failed",
             ])
         );
         expect(
-            createSuperAdminNavMain("/super-admin", [], builtinRoutes).find(
-                (route) => route.url === "/super-admin/queues"
+            createDashboardNavMain("/admin", [], builtinRoutes).find(
+                (route) => route.url === "/admin/queues"
             )?.title
         ).toBe("队列");
         expect(
-            createSuperAdminNavMain("/super-admin", [], builtinRoutes)
-                .find((route) => route.url === "/super-admin/queues")
+            createDashboardNavMain("/admin", [], builtinRoutes)
+                .find((route) => route.url === "/admin/queues")
                 ?.items.map((item) => item.title)
         ).toEqual(expect.arrayContaining(["控制台", "队列计划", "失败任务"]));
     });
 
-    it("uses the longest route prefix for dynamic super-admin child pages", () => {
+    it("uses the longest route prefix for dynamic admin child pages", () => {
         expect(
-            getSuperAdminRouteMeta(
-                "/super-admin/queues/jobs/failed/record-1",
-                "/super-admin",
+            getDashboardRouteMeta(
+                "/admin/queues/jobs/failed/record-1",
+                "/admin",
                 [],
                 [
                     {
@@ -1128,7 +1360,7 @@ describe("starter package Astro integration", () => {
         ).toEqual({
             parentTitle: "队列",
             title: "失败任务",
-            url: "/super-admin/queues/jobs/failed",
+            url: "/admin/queues/jobs/failed",
         });
     });
 
@@ -1147,6 +1379,11 @@ describe("starter package Astro integration", () => {
         const session = await auth.getSession({} as Parameters<typeof auth.getSession>[0]);
         const result = await auth.hasPermission({
             context: {} as Parameters<typeof auth.getSession>[0],
+            dashboardId: "admin",
+            permission: {
+                dashboard: ["access:admin"],
+            },
+            routeId: "dashboard.access",
             session: session!,
         });
 
@@ -1176,13 +1413,18 @@ describe("starter package Astro integration", () => {
                 },
             },
         });
-        const request = new Request("https://example.com/super-admin");
+        const request = new Request("https://example.com/replace-with-your-admin-path");
         const context = {
             request,
         } as Parameters<typeof auth.getSession>[0];
         const session = await auth.getSession(context);
         const result = await auth.hasPermission({
             context,
+            dashboardId: "admin",
+            permission: {
+                dashboard: ["access:admin"],
+            },
+            routeId: "dashboard.access",
             session: session!,
         });
 
@@ -1193,7 +1435,7 @@ describe("starter package Astro integration", () => {
         expect(userHasPermission).toHaveBeenCalledWith({
             body: {
                 permissions: {
-                    superAdmin: ["access"],
+                    dashboard: ["access:admin"],
                 },
                 role: "admin",
                 userId: "1",
@@ -1213,29 +1455,36 @@ describe("starter package Astro integration", () => {
         expect(target.get("set-cookie")).toBe("session=abc; Path=/");
     });
 
-    it("redirects unauthenticated super-admin page requests from package middleware", async () => {
-        const onRequest = createSuperAdminMiddleware({
-            adapter: defineSuperAdminAdapter({
-                auth: defineSuperAdminAuthPlugin({
-                    async getSession() {
-                        return null;
-                    },
-                    async hasPermission() {
-                        return {
-                            allowed: false,
-                        };
-                    },
-                }),
+    it("redirects unauthenticated admin page requests from package middleware", async () => {
+        const onRequest = createDashboardMiddleware({
+            auth: defineDashboardAuthAdapter({
+                async getSession() {
+                    return null;
+                },
+                async hasPermission() {
+                    return {
+                        allowed: false,
+                    };
+                },
             }),
-            graphqlPath: "/api/graphql/super-admin",
-            path: "/super-admin",
-            websocketPath: null,
+            dashboards: [
+                {
+                    graphqlPath: "/api/graphql/admin",
+                    id: "admin",
+                    path: "/replace-with-your-admin-path",
+                    publicAuthRoutes: [],
+                    requirePermission: {
+                        dashboard: ["access:admin"],
+                    },
+                    websocketPath: null,
+                },
+            ],
         });
         const response = await onRequest(
             {
                 locals: {},
-                request: new Request("https://example.com/super-admin"),
-                url: new URL("https://example.com/super-admin"),
+                request: new Request("https://example.com/replace-with-your-admin-path"),
+                url: new URL("https://example.com/replace-with-your-admin-path"),
             } as Parameters<typeof onRequest>[0],
             async () => new Response("next")
         );
@@ -1243,33 +1492,40 @@ describe("starter package Astro integration", () => {
 
         expect(redirectResponse.status).toBe(303);
         expect(redirectResponse.headers.get("location")).toBe(
-            "https://example.com/super-admin/login"
+            "https://example.com/replace-with-your-admin-path/login"
         );
     });
 
-    it("returns GraphQL errors for unauthenticated super-admin GraphQL requests", async () => {
-        const onRequest = createSuperAdminMiddleware({
-            adapter: defineSuperAdminAdapter({
-                auth: defineSuperAdminAuthPlugin({
-                    async getSession() {
-                        return null;
-                    },
-                    async hasPermission() {
-                        return {
-                            allowed: false,
-                        };
-                    },
-                }),
+    it("returns GraphQL errors for unauthenticated admin GraphQL requests", async () => {
+        const onRequest = createDashboardMiddleware({
+            auth: defineDashboardAuthAdapter({
+                async getSession() {
+                    return null;
+                },
+                async hasPermission() {
+                    return {
+                        allowed: false,
+                    };
+                },
             }),
-            graphqlPath: "/api/graphql/super-admin",
-            path: "/super-admin",
-            websocketPath: null,
+            dashboards: [
+                {
+                    graphqlPath: "/api/graphql/admin",
+                    id: "admin",
+                    path: "/replace-with-your-admin-path",
+                    publicAuthRoutes: [],
+                    requirePermission: {
+                        dashboard: ["access:admin"],
+                    },
+                    websocketPath: null,
+                },
+            ],
         });
         const response = await onRequest(
             {
                 locals: {},
-                request: new Request("https://example.com/api/graphql/super-admin"),
-                url: new URL("https://example.com/api/graphql/super-admin"),
+                request: new Request("https://example.com/api/graphql/admin"),
+                url: new URL("https://example.com/api/graphql/admin"),
             } as Parameters<typeof onRequest>[0],
             async () => new Response("next")
         );
@@ -1278,80 +1534,97 @@ describe("starter package Astro integration", () => {
         await expect(graphQLResponse.json()).resolves.toEqual({
             errors: [
                 {
-                    message: "Super admin session is required.",
+                    message:
+                        "Dashboard session is required. Open https://example.com/replace-with-your-admin-path/login to sign in, then retry.",
                 },
             ],
         });
         expect(graphQLResponse.status).toBe(401);
     });
 
-    it("returns WebSocket unauthorized responses for unauthenticated super-admin WebSocket requests", async () => {
-        const onRequest = createSuperAdminMiddleware({
-            adapter: defineSuperAdminAdapter({
-                auth: defineSuperAdminAuthPlugin({
-                    async getSession() {
-                        return null;
-                    },
-                    async hasPermission() {
-                        return {
-                            allowed: false,
-                        };
-                    },
-                }),
+    it("returns WebSocket unauthorized responses for unauthenticated admin WebSocket requests", async () => {
+        const onRequest = createDashboardMiddleware({
+            auth: defineDashboardAuthAdapter({
+                async getSession() {
+                    return null;
+                },
+                async hasPermission() {
+                    return {
+                        allowed: false,
+                    };
+                },
             }),
-            graphqlPath: "/api/graphql/super-admin",
-            path: "/super-admin",
-            websocketPath: "/api/websocket/super-admin",
+            dashboards: [
+                {
+                    graphqlPath: "/api/graphql/admin",
+                    id: "admin",
+                    path: "/replace-with-your-admin-path",
+                    publicAuthRoutes: [],
+                    requirePermission: {
+                        dashboard: ["access:admin"],
+                    },
+                    websocketPath: "/api/websocket/admin",
+                },
+            ],
         });
         const response = await onRequest(
             {
                 locals: {},
-                request: new Request("https://example.com/api/websocket/super-admin"),
-                url: new URL("https://example.com/api/websocket/super-admin"),
+                request: new Request("https://example.com/api/websocket/admin"),
+                url: new URL("https://example.com/api/websocket/admin"),
             } as Parameters<typeof onRequest>[0],
             async () => new Response("next")
         );
         const websocketResponse = response as Response;
 
-        await expect(websocketResponse.text()).resolves.toBe("Super admin session is required.");
+        await expect(websocketResponse.text()).resolves.toBe(
+            "Dashboard session is required. Open https://example.com/replace-with-your-admin-path/login to sign in, then retry."
+        );
         expect(websocketResponse.status).toBe(401);
     });
 
-    it("returns WebSocket forbidden responses for unauthorized super-admin WebSocket requests", async () => {
-        const onRequest = createSuperAdminMiddleware({
-            adapter: defineSuperAdminAdapter({
-                auth: defineSuperAdminAuthPlugin({
-                    async getSession() {
-                        return {
-                            session: {},
-                            user: {
-                                id: "1",
-                                role: "member",
-                            },
-                        };
-                    },
-                    async hasPermission() {
-                        return {
-                            allowed: false,
-                        };
-                    },
-                }),
+    it("returns WebSocket forbidden responses for unauthorized admin WebSocket requests", async () => {
+        const onRequest = createDashboardMiddleware({
+            auth: defineDashboardAuthAdapter({
+                async getSession() {
+                    return {
+                        session: {},
+                        user: {
+                            id: "1",
+                            role: "member",
+                        },
+                    };
+                },
+                async hasPermission() {
+                    return {
+                        allowed: false,
+                    };
+                },
             }),
-            graphqlPath: "/api/graphql/super-admin",
-            path: "/super-admin",
-            websocketPath: "/api/websocket/super-admin",
+            dashboards: [
+                {
+                    graphqlPath: "/api/graphql/admin",
+                    id: "admin",
+                    path: "/replace-with-your-admin-path",
+                    publicAuthRoutes: [],
+                    requirePermission: {
+                        dashboard: ["access:admin"],
+                    },
+                    websocketPath: "/api/websocket/admin",
+                },
+            ],
         });
         const response = await onRequest(
             {
                 locals: {},
-                request: new Request("https://example.com/api/websocket/super-admin"),
-                url: new URL("https://example.com/api/websocket/super-admin"),
+                request: new Request("https://example.com/api/websocket/admin"),
+                url: new URL("https://example.com/api/websocket/admin"),
             } as Parameters<typeof onRequest>[0],
             async () => new Response("next")
         );
         const websocketResponse = response as Response;
 
-        await expect(websocketResponse.text()).resolves.toBe("Super admin role is required.");
+        await expect(websocketResponse.text()).resolves.toBe("Dashboard access is required.");
         expect(websocketResponse.status).toBe(403);
     });
 

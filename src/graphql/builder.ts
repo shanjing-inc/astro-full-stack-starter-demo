@@ -1,3 +1,5 @@
+import { getTableConfig } from "drizzle-orm/mysql-core";
+
 import { createGraphQLBuilder } from "@shanjing/astro-full-stack-starter/graphql/builder";
 
 import { databaseProvider } from "@/db/client";
@@ -9,6 +11,7 @@ export type JsonValue = PackageJsonValue;
 
 export function createBuilder() {
     return createGraphQLBuilder<GraphQLContext, typeof databaseProvider.relations>({
+        getTableConfig,
         relations: databaseProvider.relations,
     });
 }

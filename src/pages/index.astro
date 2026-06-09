@@ -10,9 +10,9 @@ const featureCards = [
         tag: "graphql",
     },
     {
-        description: "验证 mysql2 连接、Drizzle 初始化，以及测试表是否可读。",
-        href: "/test/mysql",
-        label: "MySQL 测试页",
+        description: "验证 mysql2 连接、Drizzle 初始化，以及数据库测试表是否可读。",
+        href: "/test/database",
+        label: "Database 测试页",
         tag: "database",
     },
     {
@@ -40,9 +40,15 @@ const featureCards = [
         tag: "sse",
     },
     {
-        description: "超级管理员后台，使用 React Router 管理路由的独立 SPA 应用。",
-        href: "/super-admin",
-        label: "Super Admin",
+        description: "会员中心示例，验证 member dashboard、会员权限和 member GraphQL 端点。",
+        href: "/member",
+        label: "Member",
+        tag: "member",
+    },
+    {
+        description: "管理商品、店铺、订单和队列运行状态，验证后台 SPA、权限和 GraphQL 管理端点。",
+        href: "/replace-with-your-admin-path",
+        label: "Admin",
         tag: "admin",
     },
 ];
@@ -55,11 +61,12 @@ const featureCards = [
                 Deno Runtime Ready
             </p>
             <h1 class="max-w-3xl text-4xl font-semibold tracking-tight text-foreground sm:text-6xl">
-                Astro 6 + React + Tailwind 4 + Deno SSR 开发环境已就绪
+                Astro 6 + React Dashboard + GraphQL + Deno SSR 示例
             </h1>
             <p class="max-w-2xl text-base/8 text-muted-foreground sm:text-lg">
-                当前首页只保留项目概览与测试入口，不再在服务端渲染阶段自动触发数据库或队列副作用。
-                你可以按需进入独立测试页面，分别验证 MySQL、BullMQ、GraphQL 与 WebSocket。
+                当前首页集中展示运行能力测试与后台应用入口。测试页用于验证
+                MySQL、BullMQ、GraphQL、Cache、WebSocket 与 SSE；Member 和 Admin 用于验证两套
+                dashboard、权限与数据端点。
             </p>
             <div class="flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
