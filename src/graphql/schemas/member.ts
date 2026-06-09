@@ -12,7 +12,7 @@ import {
 import { registerGetOrderQuery, registerListOrdersQuery } from "@/graphql/queries/order";
 import { registerGetProductQuery, registerListProductsQuery } from "@/graphql/queries/product";
 import { registerGetShopQuery, registerListShopsQuery } from "@/graphql/queries/shop";
-import { registerCommonTypes } from "@/graphql/types/common";
+import { registerCommonTypes } from "@shanjing/astro-full-stack-starter/graphql/types/common";
 import { registerOrderTypes } from "@/graphql/types/order";
 import { registerProductTypes } from "@/graphql/types/product";
 import { registerShopTypes } from "@/graphql/types/shop";

@@ -1,0 +1,446 @@
+---
+import { and, count, desc, gte, lt, sql } from "drizzle-orm";
+
+import { createCloudflareD1DatabaseProvider, getCloudflareD1Env } from "@/db/client";
+import { insertShopDefaultValues, order, product, shop, shopStatusEnum } from "@/db/schemas";
+import BaseLayout from "@/layouts/base-layout.astro";
+
+import type { NewShop } from "@/db/schemas";
+
+const RANDOM_SHOP_ACTION = "create-random-shop";
+const RANDOM_SHOP_CREATED_PARAM = "createdShop";
+const RANDOM_SHOP_LIMIT_PARAM = "randomShopLimit";
+const RANDOM_SHOP_DAILY_LIMIT = 5;
+
+function createRandomCode() {
+    const randomValue = Math.min(Math.floor(Math.random() * 60_466_176), 60_466_175);
+
+    return randomValue.toString(36).padStart(5, "0");
+}
+
+function createTimestampSlugPart(now: Date) {
+    return now.toISOString().replace(/\D/g, "").slice(0, 14);
+}
+
+function pickRandomStatus() {
+    const statusIndex = Math.min(
+        Math.floor(Math.random() * shopStatusEnum.length),
+        shopStatusEnum.length - 1
+    );
+
+    return shopStatusEnum[statusIndex] ?? "draft";
+}
+
+function createRandomShopInput(now = new Date()): NewShop {
+    const randomCode = createRandomCode();
+
+    return {
+        name: `D1 Demo Shop ${randomCode.toUpperCase()}`,
+        slug: `d1-demo-shop-${createTimestampSlugPart(now)}-${randomCode}`,
+        status: pickRandomStatus(),
+    };
+}
+
+let connectionError: string | null = null;
+let connectionSummary: { connected: number; serverTime: number } | null = null;
+let shopError: string | null = null;
+let shopRows: Array<typeof shop.$inferSelect> = [];
+let shopCreatedAtRawById = new Map<number, number>();
+let randomShopNotice: { message: string; tone: "error" | "success" | "warning" } | null = null;
+let businessTableCounts = {
+    orders: 0,
+    products: 0,
+    shops: 0,
+};
+
+interface D1ConnectionSummaryRow {
+    connected: number;
+    serverTime: number;
+}
+
+if (Astro.request.method === "POST") {
+    const formData = await Astro.request.formData();
+
+    if (formData.get("action") === RANDOM_SHOP_ACTION) {
+        try {
+            const provider = createCloudflareD1DatabaseProvider(getCloudflareD1Env());
+            const db = provider.getDb();
+            const [todayShopCountRow] = await db
+                .select({
+                    value: count(),
+                })
+                .from(shop)
+                .where(
+                    and(
+                        gte(shop.createdAt, sql`unixepoch('now', 'start of day')`),
+                        lt(shop.createdAt, sql`unixepoch('now', 'start of day', '+1 day')`)
+                    )
+                );
+            const todayShopCount = todayShopCountRow?.value ?? 0;
+
+            if (todayShopCount >= RANDOM_SHOP_DAILY_LIMIT) {
+                const redirectUrl = new URL(Astro.url);
+
+                redirectUrl.search = "";
+                redirectUrl.searchParams.set(RANDOM_SHOP_LIMIT_PARAM, "1");
+
+                return new Response(null, {
+                    status: 303,
+                    headers: {
+                        location: `${redirectUrl.pathname}${redirectUrl.search}`,
+                    },
+                });
+            }
+
+            const randomShopInput = createRandomShopInput();
+
+            await db.insert(shop).values({
+                ...randomShopInput,
+                ...insertShopDefaultValues,
+            });
+
+            const redirectUrl = new URL(Astro.url);
+
+            redirectUrl.search = "";
+            redirectUrl.searchParams.set(RANDOM_SHOP_CREATED_PARAM, randomShopInput.name);
+
+            return new Response(null, {
+                status: 303,
+                headers: {
+                    location: `${redirectUrl.pathname}${redirectUrl.search}`,
+                },
+            });
+        } catch (error) {
+            randomShopNotice = {
+                message: error instanceof Error ? error.message : "随机店铺新增失败。",
+                tone: "error",
+            };
+        }
+    }
+}
+
+try {
+    const provider = createCloudflareD1DatabaseProvider(getCloudflareD1Env());
+    const db = provider.getDb();
+    const row = await db.$client
+        .prepare("SELECT 1 AS connected, unixepoch() AS serverTime")
+        .first<D1ConnectionSummaryRow>();
+
+    if (row) {
+        connectionSummary = row;
+    } else {
+        connectionError = "D1 unixepoch() 查询没有返回结果。";
+    }
+} catch (error) {
+    connectionError = error instanceof Error ? error.message : "D1 连接测试失败。";
+}
+
+try {
+    const provider = createCloudflareD1DatabaseProvider(getCloudflareD1Env());
+    const db = provider.getDb();
+    const [nextShopRows, shopCreatedAtRawRows, productRows, orderRows] = await Promise.all([
+        db.select().from(shop).orderBy(desc(shop.id)).limit(5),
+        db
+            .select({
+                createdAtRaw: sql<number>`created_at`,
+                id: shop.id,
+            })
+            .from(shop)
+            .orderBy(desc(shop.id))
+            .limit(5),
+        db.select({ id: product.id }).from(product).limit(5),
+        db.select({ id: order.id }).from(order).limit(5),
+    ]);
+
+    shopRows = nextShopRows;
+    shopCreatedAtRawById = new Map(shopCreatedAtRawRows.map((row) => [row.id, row.createdAtRaw]));
+    businessTableCounts = {
+        orders: orderRows.length,
+        products: productRows.length,
+        shops: nextShopRows.length,
+    };
+} catch (error) {
+    shopError = error instanceof Error ? error.message : "Drizzle D1 查询测试失败。";
+}
+
+const serverTimeIso = connectionSummary
+    ? new Date(connectionSummary.serverTime * 1000).toISOString()
+    : null;
+const createdShopName = Astro.url.searchParams.get(RANDOM_SHOP_CREATED_PARAM);
+const isRandomShopLimitReached = Astro.url.searchParams.get(RANDOM_SHOP_LIMIT_PARAM) === "1";
+
+if (!randomShopNotice && createdShopName) {
+    randomShopNotice = {
+        message: `已新增随机店铺：${createdShopName}`,
+        tone: "success",
+    };
+}
+
+if (!randomShopNotice && isRandomShopLimitReached) {
+    randomShopNotice = {
+        message: `今天已新增 ${RANDOM_SHOP_DAILY_LIMIT} 个店铺，请明天再试。`,
+        tone: "warning",
+    };
+}
+---
+
+<BaseLayout title="Database Test">
+    <section class="space-y-8">
+        <div class="space-y-4">
+            <a
+                class="inline-flex text-sm font-medium text-primary transition hover:text-primary/80"
+                href="/"
+            >
+                ← 返回首页
+            </a>
+            <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                Database Test
+            </p>
+            <h1 class="text-4xl font-semibold tracking-tight text-foreground">
+                Cloudflare D1 与 Drizzle 连通性测试
+            </h1>
+            <p class="max-w-3xl leading-8 text-muted-foreground">
+                这个页面验证 D1 binding、Drizzle D1 provider
+                和业务表读取，并按浏览器时区展示业务时间。
+            </p>
+        </div>
+
+        <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    d1 binding
+                </p>
+                {
+                    connectionSummary ? (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                连接状态：
+                                <span class="ml-2 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                                    connected
+                                </span>
+                            </p>
+                            <p>
+                                DB binding：
+                                <span class="ml-2 text-foreground">ready</span>
+                            </p>
+                            <p>
+                                unixepoch()：
+                                <span class="ml-2 text-foreground">
+                                    {connectionSummary.serverTime}
+                                </span>
+                            </p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p class="font-medium">D1 binding 连通性测试未通过。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{connectionError}</p>
+                        </div>
+                    )
+                }
+            </div>
+
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <p class="text-sm font-medium tracking-[0.3em] text-muted-foreground uppercase">
+                    drizzle
+                </p>
+                {
+                    shopError ? (
+                        <div class="mt-4 rounded-xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+                            <p>Drizzle D1 读取 shop 表失败。</p>
+                            <p class="mt-2 leading-7 text-destructive/90">{shopError}</p>
+                        </div>
+                    ) : (
+                        <div class="mt-4 space-y-3 text-sm text-muted-foreground">
+                            <p>
+                                Drizzle D1 provider 状态：
+                                <span class="ml-2 inline-flex rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700">
+                                    ready
+                                </span>
+                            </p>
+                            <p>
+                                shop 读取记录数：
+                                <span class="ml-2 text-foreground">
+                                    {businessTableCounts.shops}
+                                </span>
+                            </p>
+                            <p>
+                                product 读取记录数：
+                                <span class="ml-2 text-foreground">
+                                    {businessTableCounts.products}
+                                </span>
+                            </p>
+                            <p>
+                                order 读取记录数：
+                                <span class="ml-2 text-foreground">
+                                    {businessTableCounts.orders}
+                                </span>
+                            </p>
+                            <p class="text-muted-foreground">
+                                如果这里是 0，说明表已可读，但当前还没有测试数据。
+                            </p>
+                        </div>
+                    )
+                }
+            </div>
+        </div>
+
+        <section class="space-y-4">
+            <div class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+                <h2 class="text-lg font-semibold">D1 时间</h2>
+                <div class="mt-4 grid gap-6 text-sm text-muted-foreground lg:grid-cols-2">
+                    <div class="space-y-3">
+                        <p class="break-all">
+                            unixepoch()：
+                            <span class="ml-2 text-foreground">
+                                {connectionSummary?.serverTime ?? "-"}
+                            </span>
+                        </p>
+                        <p class="break-all">
+                            UTC 时间：
+                            <span class="ml-2 text-foreground">{serverTimeIso ?? "-"}</span>
+                        </p>
+                    </div>
+                    <div class="space-y-3">
+                        <p class="break-all">
+                            浏览器时区：
+                            <span class="ml-2 text-foreground" data-browser-timezone>
+                                detecting
+                            </span>
+                        </p>
+                        <p class="break-all">
+                            浏览器时间：
+                            <span
+                                class="ml-2 text-foreground"
+                                data-browser-current-time
+                                data-utc-instant={serverTimeIso ?? ""}
+                            >
+                                detecting
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-xl border bg-card p-6 text-card-foreground shadow-sm">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-semibold">shop 表预览</h2>
+                    <p class="mt-2 text-sm/7 text-muted-foreground">
+                        最多展示最新 5 条数据，方便确认 Drizzle D1 schema 与数据库结构已经对齐。
+                    </p>
+                </div>
+                <form method="post">
+                    <input name="action" type="hidden" value={RANDOM_SHOP_ACTION} />
+                    <button
+                        class="inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
+                        type="submit"
+                    >
+                        新增随机店铺
+                    </button>
+                </form>
+            </div>
+            <p class="mt-2 text-sm/7 text-muted-foreground">
+                每个 D1 数据库自然日最多新增 5 个随机店铺，统计范围为当天所有 shop 记录。
+            </p>
+
+            {
+                randomShopNotice && (
+                    <div
+                        class:list={[
+                            "mt-6 rounded-xl border p-4 text-sm",
+                            randomShopNotice.tone === "success" &&
+                                "border-primary/20 bg-primary/10 text-primary",
+                            randomShopNotice.tone === "warning" &&
+                                "border-yellow-500/30 bg-yellow-500/10 text-yellow-700",
+                            randomShopNotice.tone === "error" &&
+                                "border-destructive/20 bg-destructive/10 text-destructive",
+                        ]}
+                        role="status"
+                    >
+                        {randomShopNotice.message}
+                    </div>
+                )
+            }
+
+            {
+                shopRows.length > 0 ? (
+                    <div class="mt-6 overflow-x-auto rounded-xl border">
+                        <table class="min-w-full text-left text-sm text-foreground">
+                            <thead class="bg-muted/50 text-muted-foreground">
+                                <tr class="border-b">
+                                    <th class="p-3 font-medium">id</th>
+                                    <th class="p-3 font-medium">name</th>
+                                    <th class="p-3 font-medium">slug</th>
+                                    <th class="p-3 font-medium">status</th>
+                                    <th class="p-3 font-medium">createdAt（数据库原始值）</th>
+                                    <th class="p-3 font-medium">createdAt（本地时间）</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {shopRows.map((row) => (
+                                    <tr class="border-b bg-card last:border-b-0">
+                                        <td class="p-3">{row.id}</td>
+                                        <td class="p-3">{row.name}</td>
+                                        <td class="p-3">{row.slug}</td>
+                                        <td class="p-3">{row.status}</td>
+                                        <td class="p-3">
+                                            {shopCreatedAtRawById.get(row.id) ?? "-"}
+                                        </td>
+                                        <td class="p-3">
+                                            <span
+                                                data-browser-local-time
+                                                data-utc-instant={row.createdAt.toISOString()}
+                                            >
+                                                {row.createdAt.toISOString()}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : (
+                    <div class="mt-6 rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                        暂无可展示的 shop 数据。可点击新增随机店铺生成一条测试数据。
+                    </div>
+                )
+            }
+        </section>
+    </section>
+
+    <script>
+        const timezoneTarget = document.querySelector("[data-browser-timezone]");
+        const browserCurrentTimeTarget = document.querySelector("[data-browser-current-time]");
+        const localTimeTargets = document.querySelectorAll("[data-browser-local-time]");
+        const browserLocale = navigator.languages?.[0] ?? navigator.language ?? "zh-CN";
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const localTimeFormatter = new Intl.DateTimeFormat(browserLocale, {
+            dateStyle: "medium",
+            hour12: false,
+            timeStyle: "medium",
+        });
+
+        if (timezoneTarget) {
+            timezoneTarget.textContent = timezone;
+        }
+
+        if (browserCurrentTimeTarget) {
+            const utcInstant = browserCurrentTimeTarget.getAttribute("data-utc-instant");
+            const date = utcInstant ? new Date(utcInstant) : new Date();
+
+            browserCurrentTimeTarget.textContent = Number.isNaN(date.getTime())
+                ? "-"
+                : localTimeFormatter.format(date);
+        }
+
+        localTimeTargets.forEach((localTimeTarget) => {
+            const utcInstant = localTimeTarget.getAttribute("data-utc-instant");
+            const date = utcInstant ? new Date(utcInstant) : new Date();
+
+            localTimeTarget.textContent = Number.isNaN(date.getTime())
+                ? "-"
+                : localTimeFormatter.format(date);
+        });
+    </script>
+</BaseLayout>

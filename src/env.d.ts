@@ -42,6 +42,7 @@ declare global {
         readonly QUEUE_EXECUTION_RECORD_TTL_SECONDS?: string;
         readonly SENTRY_DSN?: string;
         readonly SENTRY_RELEASE?: string;
+        readonly TZ?: string;
         readonly WEBSOCKET_ALLOWED_ORIGINS?: string;
         readonly WEBSOCKET_IDLE_TIMEOUT_SECONDS?: string;
         readonly WEBSOCKET_MAX_CONNECTIONS?: string;

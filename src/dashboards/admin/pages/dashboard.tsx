@@ -7,13 +7,13 @@ import {
     DateTimeCell,
     MoneyCell,
     StatusBadge,
-    useSuperAdminQuery,
-} from "@shanjing/astro-full-stack-starter/super-admin/client";
+    useDashboardQuery,
+} from "@shanjing/astro-full-stack-starter/dashboard/client";
 
-import type { GetSuperAdminDashboardQuery } from "@/graphql/generated/super-admin-types";
+import type { GetAdminDashboardQuery } from "@/graphql/generated/admin-types";
 
-const GET_SUPER_ADMIN_DASHBOARD = gql`
-    query getSuperAdminDashboard {
+const GET_ADMIN_DASHBOARD = gql`
+    query getAdminDashboard {
         listShops(orderBy: { createdAt: { direction: desc, priority: 1 } }) {
             id
             name
@@ -87,7 +87,7 @@ function StatusSummary({ counts }: { counts: Record<string, number> }) {
 
 export function DashboardPage() {
     const { data, error, loading, refetch } =
-        useSuperAdminQuery<GetSuperAdminDashboardQuery>(GET_SUPER_ADMIN_DASHBOARD);
+        useDashboardQuery<GetAdminDashboardQuery>(GET_ADMIN_DASHBOARD);
     const shops = data?.listShops ?? [];
     const products = data?.listProducts ?? [];
     const orders = data?.listOrders ?? [];
@@ -97,7 +97,7 @@ export function DashboardPage() {
         <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-normal">Super Admin</h1>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-normal">Admin</h1>
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                         Shop、Product、Order 数据概览。
                     </p>

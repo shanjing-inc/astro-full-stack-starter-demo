@@ -1,7 +1,7 @@
 ---
 import BaseLayout from "@/layouts/base-layout.astro";
 
-type GraphQLEndpointKey = "member" | "super-admin";
+type GraphQLEndpointKey = "member" | "admin";
 
 interface GraphQLEndpointOption {
     label: string;
@@ -26,20 +26,20 @@ const ENDPOINT_OPTIONS: GraphQLEndpointOption[] = [
         value: "member",
     },
     {
-        label: "Super Admin",
-        path: "/api/graphql/super-admin",
-        value: "super-admin",
+        label: "Admin",
+        path: "/api/graphql/admin",
+        value: "admin",
     },
 ];
 const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     {
-        description: "读取前 5 个 shop，确认 Cloudflare member endpoint 可用。",
+        description: "读取前 5 个 shop，确认 member query 通路可用。",
         endpoint: "member",
         label: "ListShops",
         operationType: "query",
         query: /* GraphQL */ `
-            query ListShops($limit: Int) {
-                listShops(limit: $limit) {
+            query ListShops($limit: Int, $offset: Int, $orderBy: ShopOrderBy, $where: ShopFilters) {
+                listShops(limit: $limit, offset: $offset, orderBy: $orderBy, where: $where) {
                     id
                     name
                     slug
@@ -49,10 +49,22 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                 }
             }
         `,
-        variables: JSON.stringify({ limit: 5 }, null, 4),
+        variables: JSON.stringify(
+            {
+                limit: 5,
+                orderBy: {
+                    id: {
+                        direction: "desc",
+                        priority: 1,
+                    },
+                },
+            },
+            null,
+            4
+        ),
     },
     {
-        description: "按 id 查询单个 shop，确认 D1 where 查询可用。",
+        description: "按 id 查询单个 shop，确认 where filters 结构可用。",
         endpoint: "member",
         label: "GetShop",
         operationType: "query",
@@ -63,19 +75,36 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                     name
                     slug
                     status
+                    createdAt
+                    updatedAt
                 }
             }
         `,
-        variables: JSON.stringify({ where: { id: { eq: 1 } } }, null, 4),
+        variables: JSON.stringify(
+            {
+                where: {
+                    id: {
+                        eq: 1,
+                    },
+                },
+            },
+            null,
+            4
+        ),
     },
     {
-        description: "读取前 5 个 product，确认 Cloudflare member endpoint 的商品查询可用。",
+        description: "读取前 5 个 product，确认 member 端点的商品查询可用。",
         endpoint: "member",
         label: "ListProducts",
         operationType: "query",
         query: /* GraphQL */ `
-            query ListProducts($limit: Int, $orderBy: ProductOrderBy) {
-                listProducts(limit: $limit, orderBy: $orderBy) {
+            query ListProducts(
+                $limit: Int
+                $offset: Int
+                $orderBy: ProductOrderBy
+                $where: ProductFilters
+            ) {
+                listProducts(limit: $limit, offset: $offset, orderBy: $orderBy, where: $where) {
                     id
                     shopId
                     name
@@ -89,7 +118,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                 limit: 5,
                 orderBy: {
                     id: {
-                        direction: "asc",
+                        direction: "desc",
                         priority: 1,
                     },
                 },
@@ -99,13 +128,18 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
         ),
     },
     {
-        description: "读取前 5 个 order，确认 Cloudflare member endpoint 的订单查询可用。",
+        description: "读取前 5 个 order，确认 member 端点的订单查询可用。",
         endpoint: "member",
         label: "ListOrders",
         operationType: "query",
         query: /* GraphQL */ `
-            query ListOrders($limit: Int, $orderBy: OrderOrderBy) {
-                listOrders(limit: $limit, orderBy: $orderBy) {
+            query ListOrders(
+                $limit: Int
+                $offset: Int
+                $orderBy: OrderOrderBy
+                $where: OrderFilters
+            ) {
+                listOrders(limit: $limit, offset: $offset, orderBy: $orderBy, where: $where) {
                     id
                     shopId
                     productId
@@ -129,8 +163,8 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
         ),
     },
     {
-        description: "创建一个 shop 示例，确认 super-admin 端点业务 mutation 可用。",
-        endpoint: "super-admin",
+        description: "创建一个 shop 示例。这个预设会自动切到 admin 端点。",
+        endpoint: "admin",
         label: "CreateShop",
         operationType: "mutation",
         query: /* GraphQL */ `
@@ -159,8 +193,8 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     },
     {
         description:
-            "读取管理员列表，确认 package super-admin GraphQL 已通过 D1 provider 访问 user 表。",
-        endpoint: "super-admin",
+            "读取管理员列表，确认 package dashboard GraphQL 已通过 D1 provider 访问 user 表。",
+        endpoint: "admin",
         label: "ListUsers",
         operationType: "query",
         query: /* GraphQL */ `
@@ -212,7 +246,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                 Cloudflare D1 GraphQL 测试页
             </h1>
             <p class="max-w-3xl leading-8 text-muted-foreground">
-                页面结构与 Deno demo 对齐。member 端点验证 D1 shop、product、order 查询，super-admin
+                页面结构与 Deno demo 对齐。member 端点验证 D1 shop、product、order 查询，admin
                 端点验证 package 内置 GraphQL 和业务 mutation 通过 D1 provider 访问数据库。
             </p>
         </div>
@@ -261,8 +295,9 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
                         class="mt-6 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
                         href="/api/graphql/member"
                         id="open-graphiql"
+                        target="_blank"
                     >
-                        打开 endpoint
+                        打开 GraphiQL
                     </a>
                 </div>
 
@@ -412,12 +447,12 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
     interface GraphQLEndpointOptionClient {
         label: string;
         path: string;
-        value: "member" | "super-admin";
+        value: "member" | "admin";
     }
 
     interface GraphQLTestPresetClient {
         description: string;
-        endpoint: "member" | "super-admin";
+        endpoint: "member" | "admin";
         label: string;
         operationType: "mutation" | "query";
         query: string;
@@ -475,14 +510,14 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
             elements.pageRoot.dataset.presets ?? "[]"
         ) as GraphQLTestPresetClient[];
 
-        function getEndpointPath(endpointKey: "member" | "super-admin") {
+        function getEndpointPath(endpointKey: "member" | "admin") {
             return (
                 endpointOptions.find((option) => option.value === endpointKey)?.path ??
                 "/api/graphql/member"
             );
         }
 
-        function syncEndpoint(endpointKey: "member" | "super-admin") {
+        function syncEndpoint(endpointKey: "member" | "admin") {
             elements.endpointSelect.value = endpointKey;
             elements.endpointPath.textContent = getEndpointPath(endpointKey);
             elements.graphiqlLink.href = getEndpointPath(endpointKey);
@@ -502,9 +537,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
         }
 
         async function executeGraphQLRequest() {
-            const endpoint = getEndpointPath(
-                elements.endpointSelect.value as "member" | "super-admin"
-            );
+            const endpoint = getEndpointPath(elements.endpointSelect.value as "member" | "admin");
             const query = elements.queryTextarea.value.trim();
             const variablesText = elements.variablesTextarea.value.trim();
             let variables: Record<string, unknown> = {};
@@ -550,7 +583,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
         }
 
         elements.endpointSelect.addEventListener("change", () => {
-            syncEndpoint(elements.endpointSelect.value as "member" | "super-admin");
+            syncEndpoint(elements.endpointSelect.value as "member" | "admin");
         });
         elements.defaultPresetButton.addEventListener("click", () => {
             applyPreset(0);
@@ -569,9 +602,7 @@ const GRAPHQL_TEST_PRESETS: GraphQLTestPreset[] = [
             void executeGraphQLRequest();
         });
 
-        syncEndpoint(
-            (elements.pageRoot.dataset.defaultEndpoint ?? "member") as "member" | "super-admin"
-        );
+        syncEndpoint((elements.pageRoot.dataset.defaultEndpoint ?? "member") as "member" | "admin");
         applyPreset(0);
     } else {
         console.error("[graphql-test] initialization failed.");

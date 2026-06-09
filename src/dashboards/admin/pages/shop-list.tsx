@@ -8,43 +8,39 @@ import { Input } from "@/components/ui/input";
 import {
     DataTable,
     DateTimeCell,
-    MoneyCell,
     parsePageParam,
     parsePageSizeParam,
     StatusBadge,
     TablePagination,
-    useSuperAdminQuery,
+    useDashboardQuery,
     type DataTableColumn,
-} from "@shanjing/astro-full-stack-starter/super-admin/client";
+} from "@shanjing/astro-full-stack-starter/dashboard/client";
 
 import type {
-    ListSuperAdminProductsQuery,
-    ListSuperAdminProductsQueryVariables,
-    ProductFilters,
-} from "@/graphql/generated/super-admin-types";
+    ListAdminShopsQuery,
+    ListAdminShopsQueryVariables,
+    ShopFilters,
+} from "@/graphql/generated/admin-types";
 import type React from "react";
 
-const LIST_SUPER_ADMIN_PRODUCTS = gql`
-    query listSuperAdminProducts($where: ProductFilters, $limit: Int, $offset: Int) {
-        listProducts(
+const LIST_ADMIN_SHOPS = gql`
+    query listAdminShops($where: ShopFilters, $limit: Int, $offset: Int) {
+        listShops(
             where: $where
             limit: $limit
             offset: $offset
             orderBy: { createdAt: { direction: desc, priority: 1 } }
         ) {
             id
-            shopId
             name
-            sku
-            priceInCents
-            inventoryCount
+            slug
             status
             createdAt
             updatedAt
-            shop {
+            products {
                 id
                 name
-                slug
+                sku
             }
             orders {
                 id
@@ -55,96 +51,58 @@ const LIST_SUPER_ADMIN_PRODUCTS = gql`
     }
 `;
 
-type ProductItem = NonNullable<ListSuperAdminProductsQuery["listProducts"]>[number];
+type ShopItem = NonNullable<ListAdminShopsQuery["listShops"]>[number];
 
-const productColumns: DataTableColumn<ProductItem>[] = [
+const shopColumns: DataTableColumn<ShopItem>[] = [
     {
         key: "id",
         header: "ID",
-        render: (product) => product.id,
-    },
-    {
-        key: "shopId",
-        header: "Shop ID",
-        render: (product) => product.shopId,
-    },
-    {
-        key: "shop",
-        header: "Shop",
-        render: (product) => product.shop?.name ?? "-",
+        render: (shop) => shop.id,
     },
     {
         key: "name",
         header: "Name",
-        render: (product) => <span className="font-medium">{product.name}</span>,
+        render: (shop) => <span className="font-medium">{shop.name}</span>,
     },
     {
-        key: "sku",
-        header: "SKU",
-        render: (product) => product.sku,
-    },
-    {
-        key: "priceInCents",
-        header: "Price",
-        render: (product) => <MoneyCell valueInCents={product.priceInCents} />,
-    },
-    {
-        key: "inventoryCount",
-        header: "Inventory",
-        render: (product) => product.inventoryCount,
+        key: "slug",
+        header: "Slug",
+        render: (shop) => shop.slug,
     },
     {
         key: "status",
         header: "Status",
-        render: (product) => <StatusBadge status={product.status} />,
+        render: (shop) => <StatusBadge status={shop.status} />,
+    },
+    {
+        key: "products",
+        header: "Products",
+        render: (shop) => shop.products?.length ?? 0,
     },
     {
         key: "orders",
         header: "Orders",
-        render: (product) => product.orders?.length ?? 0,
+        render: (shop) => shop.orders?.length ?? 0,
     },
     {
         key: "createdAt",
         header: "Created At",
-        render: (product) => <DateTimeCell value={product.createdAt} />,
+        render: (shop) => <DateTimeCell value={shop.createdAt} />,
     },
     {
         key: "updatedAt",
         header: "Updated At",
-        render: (product) => <DateTimeCell value={product.updatedAt} />,
+        render: (shop) => <DateTimeCell value={shop.updatedAt} />,
     },
 ];
 
-function parseIntegerFilter(value: string) {
-    const trimmedValue = value.trim();
+function buildShopFilters(slug: string, status: string): ShopFilters | undefined {
+    const where: ShopFilters = {};
+    const trimmedSlug = slug.trim();
 
-    if (!trimmedValue) {
-        return undefined;
-    }
-
-    const parsedValue = Number.parseInt(trimmedValue, 10);
-
-    return Number.isNaN(parsedValue) ? undefined : parsedValue;
-}
-
-function buildProductFilters(
-    shopId: string,
-    sku: string,
-    status: string
-): ProductFilters | undefined {
-    const where: ProductFilters = {};
-    const parsedShopId = parseIntegerFilter(shopId);
-    const trimmedSku = sku.trim();
-
-    if (typeof parsedShopId === "number") {
-        where.shopId = {
-            eq: parsedShopId,
-        };
-    }
-
-    if (trimmedSku) {
-        where.sku = {
-            like: `%${trimmedSku}%`,
+    if (trimmedSlug) {
+        where.slug = {
+            like: `%${trimmedSlug}%`,
         };
     }
 
@@ -157,50 +115,42 @@ function buildProductFilters(
     return Object.keys(where).length > 0 ? where : undefined;
 }
 
-export function ProductListPage() {
+export function ShopListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const searchParamsKey = searchParams.toString();
     const filters = {
-        shopId: searchParams.get("shopId") ?? "",
-        sku: searchParams.get("sku") ?? "",
+        slug: searchParams.get("slug") ?? "",
         status: searchParams.get("status") ?? "",
     };
     const page = parsePageParam(searchParams.get("page"));
     const pageSize = parsePageSizeParam(searchParams.get("pageSize"));
-    const variables = useMemo<ListSuperAdminProductsQueryVariables>(
+    const variables = useMemo<ListAdminShopsQueryVariables>(
         () => ({
             limit: pageSize,
             offset: (page - 1) * pageSize,
-            where: buildProductFilters(filters.shopId, filters.sku, filters.status),
+            where: buildShopFilters(filters.slug, filters.status),
         }),
-        [filters.shopId, filters.sku, filters.status, page, pageSize]
+        [filters.slug, filters.status, page, pageSize]
     );
-    const { data, error, loading, refetch } = useSuperAdminQuery<
-        ListSuperAdminProductsQuery,
-        ListSuperAdminProductsQueryVariables
-    >(LIST_SUPER_ADMIN_PRODUCTS, variables);
-    const products = data?.listProducts ?? [];
+    const { data, error, loading, refetch } = useDashboardQuery<
+        ListAdminShopsQuery,
+        ListAdminShopsQueryVariables
+    >(LIST_ADMIN_SHOPS, variables);
+    const shops = data?.listShops ?? [];
 
     function applyFilters(event: React.SyntheticEvent<HTMLFormElement>) {
         event.preventDefault();
         const formData = new FormData(event.currentTarget);
-        const nextShopId = String(formData.get("shopId") ?? "").trim();
-        const nextSku = String(formData.get("sku") ?? "").trim();
+        const nextSlug = String(formData.get("slug") ?? "").trim();
         const nextStatus = String(formData.get("status") ?? "");
 
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
 
-            if (nextShopId) {
-                nextParams.set("shopId", nextShopId);
+            if (nextSlug) {
+                nextParams.set("slug", nextSlug);
             } else {
-                nextParams.delete("shopId");
-            }
-
-            if (nextSku) {
-                nextParams.set("sku", nextSku);
-            } else {
-                nextParams.delete("sku");
+                nextParams.delete("slug");
             }
 
             if (nextStatus) {
@@ -218,8 +168,7 @@ export function ProductListPage() {
     function resetFilters() {
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
-            nextParams.delete("shopId");
-            nextParams.delete("sku");
+            nextParams.delete("slug");
             nextParams.delete("status");
             nextParams.set("page", "1");
 
@@ -250,10 +199,9 @@ export function ProductListPage() {
         <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-normal">Product List</h1>
+                    <h1 className="mt-2 text-3xl font-semibold tracking-normal">Shop List</h1>
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-                        product 表字段、所属 shop 和订单数量。
-                        {loading ? "" : `当前 ${products.length} 条记录。`}
+                        shop 表字段和关联数量。{loading ? "" : `当前 ${shops.length} 条记录。`}
                     </p>
                 </div>
                 <Button type="button" variant="outline" onClick={refetch} disabled={loading}>
@@ -268,17 +216,10 @@ export function ProductListPage() {
                 onSubmit={applyFilters}
             >
                 <Input
-                    aria-label="Filter by shop id"
-                    inputMode="numeric"
-                    name="shopId"
-                    placeholder="Shop ID"
-                    defaultValue={filters.shopId}
-                />
-                <Input
-                    aria-label="Filter by sku"
-                    name="sku"
-                    placeholder="SKU contains"
-                    defaultValue={filters.sku}
+                    aria-label="Filter by slug"
+                    name="slug"
+                    placeholder="Slug contains"
+                    defaultValue={filters.slug}
                 />
                 <select
                     aria-label="Filter by status"
@@ -291,7 +232,7 @@ export function ProductListPage() {
                     <option value="active">active</option>
                     <option value="archived">archived</option>
                 </select>
-                <Button type="submit" variant="secondary" className="w-full">
+                <Button type="submit" className="w-full">
                     <FilterIcon />
                     Filter
                 </Button>
@@ -308,14 +249,14 @@ export function ProductListPage() {
             ) : null}
 
             <DataTable
-                columns={productColumns}
-                emptyText={loading ? "Loading" : "No product records"}
-                getRowKey={(product) => String(product.id)}
-                items={products}
+                columns={shopColumns}
+                emptyText={loading ? "Loading" : "No shop records"}
+                getRowKey={(shop) => String(shop.id)}
+                items={shops}
             />
 
             <TablePagination
-                itemCount={products.length}
+                itemCount={shops.length}
                 loading={loading}
                 onPageChange={changePage}
                 onPageSizeChange={changePageSize}

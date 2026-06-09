@@ -63,6 +63,48 @@ describe("Cloudflare demo parity with Deno demo", () => {
         expect(readProjectFile("src/stores/site-theme.ts")).toContain("persistentAtom<SiteTheme>");
     });
 
+    it("keeps test page entry order and database route parity", () => {
+        const indexPage = readProjectFile("src/pages/index.astro");
+        const databasePage = readProjectFile("src/pages/test/database.astro");
+        const graphqlPage = readProjectFile("src/pages/test/graphql.astro");
+        const graphqlCardIndex = indexPage.indexOf('href: "/test/graphql"');
+        const databaseCardIndex = indexPage.indexOf('href: "/test/database"');
+
+        expectProjectFile("src/pages/test/database.astro");
+        expectProjectFile("src/pages/test/graphql.astro");
+        expect(existsSync(path.join(rootDir, "src/pages/test/mysql.astro"))).toBe(false);
+        expect(graphqlCardIndex).toBeGreaterThanOrEqual(0);
+        expect(databaseCardIndex).toBeGreaterThan(graphqlCardIndex);
+        expect(indexPage).toContain('label: "Database 测试页"');
+        expect(indexPage).toContain('href="/test/database"');
+        expect(indexPage).not.toContain("/test/mysql");
+        expect(indexPage).not.toContain("D1 测试页");
+        expect(databasePage).toContain('<BaseLayout title="Database Test">');
+        expect(databasePage).toContain("Cloudflare D1 与 Drizzle 连通性测试");
+        expect(databasePage).toContain("DB binding");
+        expect(databasePage).toContain("Drizzle D1 provider 状态");
+        expect(databasePage).toContain("createdAt（数据库原始值）");
+        expect(databasePage).toContain("createdAt（本地时间）");
+        expect(databasePage).toContain("浏览器时间");
+        expect(databasePage).toContain(
+            'prepare("SELECT 1 AS connected, unixepoch() AS serverTime")'
+        );
+        expect(databasePage).toContain("navigator.languages");
+        expect(databasePage).toContain("RANDOM_SHOP_ACTION");
+        expect(databasePage).toContain('Astro.request.method === "POST"');
+        expect(databasePage).toContain("RANDOM_SHOP_DAILY_LIMIT = 5");
+        expect(databasePage).toContain("unixepoch('now', 'start of day')");
+        expect(databasePage).toContain("新增随机店铺");
+        expect(databasePage).not.toContain("浏览器时区诊断");
+        expect(graphqlPage).toContain(
+            "query ListShops($limit: Int, $offset: Int, $orderBy: ShopOrderBy, $where: ShopFilters)"
+        );
+        expect(graphqlPage).toContain("createdAt");
+        expect(graphqlPage).toContain("updatedAt");
+        expect(graphqlPage).toContain("这个预设会自动切到 admin 端点");
+        expect(graphqlPage).toContain("ListUsers");
+    });
+
     it("injects GraphQL loaders into the request context", () => {
         const contextFile = readProjectFile("src/graphql/context.ts");
 
@@ -74,6 +116,17 @@ describe("Cloudflare demo parity with Deno demo", () => {
         expect(contextFile).toContain("loaders: createGraphQLLoaders");
     });
 
+    it("keeps the admin dashboard home route in navigation", () => {
+        const adminRoutes = readProjectFile("src/dashboards/admin/routes.tsx");
+
+        expect(adminRoutes).toContain("LayoutDashboardIcon");
+        expect(adminRoutes).toContain('id: "project.dashboard"');
+        expect(adminRoutes).toContain('path: "/"');
+        expect(adminRoutes).toContain('group: "overview"');
+        expect(adminRoutes).toContain("icon: LayoutDashboardIcon");
+        expect(adminRoutes).toContain("order: 0");
+    });
+
     it("keeps WebSocket endpoint parity with the Deno demo", () => {
         const astroConfig = readProjectFile("astro.config.mjs");
         const wranglerConfig = readProjectFile("wrangler.jsonc");
@@ -81,15 +134,15 @@ describe("Cloudflare demo parity with Deno demo", () => {
         expectProjectFile("src/worker.ts");
         expectProjectFile("src/websocket/adapters/public.ts");
         expectProjectFile("src/websocket/adapters/member.ts");
-        expectProjectFile("src/websocket/adapters/super-admin.ts");
+        expectProjectFile("src/websocket/adapters/admin.ts");
         expectProjectFile("src/websocket/features/server-push-demo.ts");
         expectProjectFile("src/websocket/reporter.ts");
         expectProjectFile("src/middleware/member.ts");
         expect(astroConfig).toContain("websocket: {");
         expect(astroConfig).toContain('path: "/api/websocket/public"');
         expect(astroConfig).toContain('path: "/api/websocket/member"');
-        expect(astroConfig).toContain('path: "/api/websocket/super-admin"');
-        expect(astroConfig).toContain('websocketEndpoint: "superAdmin"');
+        expect(astroConfig).toContain('path: "/api/websocket/admin"');
+        expect(astroConfig).toContain('websocketEndpoint: "admin"');
         expect(wranglerConfig).toContain('"main": "./src/worker.ts"');
         expect(wranglerConfig).toContain('"name": "WEBSOCKET_ROOM"');
         expect(wranglerConfig).toContain('"class_name": "PublicWebSocketRoom"');

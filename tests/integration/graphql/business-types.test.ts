@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+    buildOrderRelationWhere,
     buildRequiredOrderWhereClause,
     parseCreateOrderSetInput,
     parseOrderListArgs,
     parseOrderRequiredWhereInput,
+    parseOrderWhereInput,
     parseUpdateOrderSetInput,
 } from "@/graphql/types/order";
 import {
@@ -125,5 +127,23 @@ describe("Cloudflare D1 business GraphQL types", () => {
                 })
             )
         ).toBeTruthy();
+    });
+
+    it("supports createdAt DateTime filters for order queries", () => {
+        const parsedWhere = parseOrderWhereInput({
+            createdAt: {
+                gte: "2026-06-01T00:00:00Z",
+                lt: "2026-06-09T00:00:00Z",
+            },
+        });
+
+        expect(parsedWhere.createdAt?.gte).toBeInstanceOf(Date);
+        expect(parsedWhere.createdAt?.lt).toBeInstanceOf(Date);
+        expect(buildOrderRelationWhere(parsedWhere)).toEqual({
+            createdAt: {
+                gte: new Date("2026-06-01T00:00:00.000Z"),
+                lt: new Date("2026-06-09T00:00:00.000Z"),
+            },
+        });
     });
 });

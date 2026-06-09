@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -12,6 +12,9 @@ const defaultMigrationsDir = path.resolve(fixtureDir, "../../../.tmp/sqlite-test
 export default function setupSqliteTestMigrations() {
     rmSync(defaultMigrationsDir, {
         force: true,
+        recursive: true,
+    });
+    mkdirSync(defaultMigrationsDir, {
         recursive: true,
     });
 

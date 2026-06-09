@@ -1,5 +1,5 @@
 import { createGraphQLContext } from "@/graphql/context";
-import { superAdminSchema } from "@/graphql/schemas/super-admin";
+import { adminSchema } from "@/graphql/schemas/admin";
 import { useSentryGraphQL } from "@/graphql/sentry-plugin";
 
 import type { GraphQLEndpointAdapter } from "@shanjing/astro-full-stack-starter/graphql";
@@ -10,6 +10,6 @@ export const adapter = {
     },
     context: ({ request }) => createGraphQLContext(request),
     graphiql: true,
-    plugins: [useSentryGraphQL("super-admin")],
-    schema: superAdminSchema,
+    plugins: [useSentryGraphQL("admin")],
+    schema: adminSchema,
 } satisfies GraphQLEndpointAdapter;

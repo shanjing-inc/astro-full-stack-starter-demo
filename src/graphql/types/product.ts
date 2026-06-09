@@ -16,8 +16,7 @@ import {
     limitArgSchema,
     offsetArgSchema,
     stringFiltersSchema,
-} from "@/graphql/types/common";
-import { serializeDateTime } from "@shanjing/astro-full-stack-starter/graphql/utils";
+} from "@shanjing/astro-full-stack-starter/graphql/types/common";
 
 import type { PothosBuilder } from "@/graphql/builder";
 import type { Product } from "@/db/schemas";
@@ -26,7 +25,7 @@ import type {
     InnerOrderInputShape,
     IntFiltersInputShape,
     StringFiltersInputShape,
-} from "@/graphql/types/common";
+} from "@shanjing/astro-full-stack-starter/graphql/types/common";
 
 const productFiltersSchema = z.object({
     id: intFiltersSchema.optional(),
@@ -214,13 +213,11 @@ export function registerProductTypes(builder: PothosBuilder, commonTypes: Common
             priceInCents: t.exposeInt("priceInCents"),
             inventoryCount: t.exposeInt("inventoryCount"),
             status: t.exposeString("status"),
-            createdAt: t.field({
-                type: "String",
-                resolve: (productRecord) => serializeDateTime(productRecord.createdAt),
+            createdAt: t.expose("createdAt", {
+                type: commonTypes.dateTime,
             }),
-            updatedAt: t.field({
-                type: "String",
-                resolve: (productRecord) => serializeDateTime(productRecord.updatedAt),
+            updatedAt: t.expose("updatedAt", {
+                type: commonTypes.dateTime,
             }),
             shop: t.relation("shop"),
             orders: t.relation("orders"),

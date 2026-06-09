@@ -7,27 +7,31 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
 type LoginFormProps = React.ComponentProps<"div"> & {
+    action?: string;
     defaultEmail?: string;
+    description?: string;
     errorMessage?: string;
+    title?: string;
 };
 
 export function LoginForm({
+    action = "/replace-with-your-admin-path/login",
     className,
     defaultEmail = "",
+    description = "使用管理员账号登录",
     errorMessage = "",
+    title = "Admin",
     ...props
 }: LoginFormProps) {
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
             <Card className="overflow-hidden p-0">
                 <CardContent className="grid p-0 md:grid-cols-2">
-                    <form method="post" action="/super-admin/login" className="p-6 md:p-8">
+                    <form method="post" action={action} className="p-6 md:p-8">
                         <FieldGroup>
                             <div className="flex flex-col items-center gap-2 text-center">
-                                <h1 className="text-2xl font-bold">Super Admin</h1>
-                                <p className="text-balance text-muted-foreground">
-                                    使用管理员账号登录
-                                </p>
+                                <h1 className="text-2xl font-bold">{title}</h1>
+                                <p className="text-balance text-muted-foreground">{description}</p>
                             </div>
                             {errorMessage ? (
                                 <div

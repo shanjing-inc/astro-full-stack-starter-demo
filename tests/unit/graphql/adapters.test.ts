@@ -12,8 +12,8 @@ vi.mock("@/graphql/schemas/member", () => ({
     memberSchema: "member-schema",
 }));
 
-vi.mock("@/graphql/schemas/super-admin", () => ({
-    superAdminSchema: "super-admin-schema",
+vi.mock("@/graphql/schemas/admin", () => ({
+    adminSchema: "admin-schema",
 }));
 
 vi.mock("@/graphql/sentry-plugin", () => ({
@@ -29,11 +29,11 @@ describe("Cloudflare GraphQL endpoint adapters", () => {
         expect(adapter.batching).toEqual({ limit: 10 });
     });
 
-    it("registers the Sentry GraphQL plugin for the super-admin endpoint", async () => {
-        const { adapter } = await import("@/graphql/adapters/super-admin");
+    it("registers the Sentry GraphQL plugin for the admin endpoint", async () => {
+        const { adapter } = await import("@/graphql/adapters/admin");
 
-        expect(useSentryGraphQLMock).toHaveBeenCalledWith("super-admin");
-        expect(adapter.plugins).toEqual(["sentry:super-admin"]);
+        expect(useSentryGraphQLMock).toHaveBeenCalledWith("admin");
+        expect(adapter.plugins).toEqual(["sentry:admin"]);
         expect(adapter.batching).toEqual({ limit: 10 });
     });
 });

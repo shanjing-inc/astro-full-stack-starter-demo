@@ -1,31 +1,34 @@
 import { gql } from "@apollo/client/core";
-import { FilterIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react";
-import { useMemo } from "react";
+import { CalendarIcon, FilterIcon, RefreshCwIcon, RotateCcwIcon } from "lucide-react";
+import React, { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
+    Calendar,
     DataTable,
     DateTimeCell,
     MoneyCell,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
     parsePageParam,
     parsePageSizeParam,
     StatusBadge,
     TablePagination,
-    useSuperAdminQuery,
+    useDashboardQuery,
     type DataTableColumn,
-} from "@shanjing/astro-full-stack-starter/super-admin/client";
+} from "@shanjing/astro-full-stack-starter/dashboard/client";
 
 import type {
-    ListSuperAdminOrdersQuery,
-    ListSuperAdminOrdersQueryVariables,
+    ListAdminOrdersQuery,
+    ListAdminOrdersQueryVariables,
     OrderFilters,
-} from "@/graphql/generated/super-admin-types";
-import type React from "react";
+} from "@/graphql/generated/admin-types";
 
-const LIST_SUPER_ADMIN_ORDERS = gql`
-    query listSuperAdminOrders($where: OrderFilters, $limit: Int, $offset: Int) {
+const LIST_ADMIN_ORDERS = gql`
+    query listAdminOrders($where: OrderFilters, $limit: Int, $offset: Int) {
         listOrders(
             where: $where
             limit: $limit
@@ -57,7 +60,8 @@ const LIST_SUPER_ADMIN_ORDERS = gql`
     }
 `;
 
-type OrderItem = NonNullable<ListSuperAdminOrdersQuery["listOrders"]>[number];
+type OrderItem = NonNullable<ListAdminOrdersQuery["listOrders"]>[number];
+type CreatedAtRangeFilter = [string, string];
 
 const orderColumns: DataTableColumn<OrderItem>[] = [
     {
@@ -140,16 +144,118 @@ function parseIntegerFilter(value: string) {
     return Number.isNaN(parsedValue) ? undefined : parsedValue;
 }
 
+function parseDateFilter(value: string) {
+    const trimmedValue = value.trim();
+    const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/u;
+    const match = datePattern.exec(trimmedValue);
+
+    if (!match) {
+        return undefined;
+    }
+
+    const year = Number.parseInt(match[1] ?? "", 10);
+    const month = Number.parseInt(match[2] ?? "", 10);
+    const day = Number.parseInt(match[3] ?? "", 10);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+    ) {
+        return undefined;
+    }
+
+    return date;
+}
+
+function serializeDateFilter(value: Date) {
+    return value.toISOString();
+}
+
+function formatDateValue(value: Date) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+}
+
+function parseCalendarDateValue(value: string) {
+    const trimmedValue = value.trim();
+    const datePattern = /^(\d{4})-(\d{2})-(\d{2})$/u;
+    const match = datePattern.exec(trimmedValue);
+
+    if (!match) {
+        return undefined;
+    }
+
+    const year = Number.parseInt(match[1] ?? "", 10);
+    const month = Number.parseInt(match[2] ?? "", 10);
+    const day = Number.parseInt(match[3] ?? "", 10);
+    const date = new Date(year, month - 1, day);
+
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+        return undefined;
+    }
+
+    return date;
+}
+
+function parseCreatedAtRangeSearchParam(value: null | string): CreatedAtRangeFilter {
+    if (!value) {
+        return ["", ""];
+    }
+
+    try {
+        const parsedValue: unknown = JSON.parse(value);
+
+        if (
+            Array.isArray(parsedValue) &&
+            typeof parsedValue[0] === "string" &&
+            typeof parsedValue[1] === "string"
+        ) {
+            return [parsedValue[0].trim(), parsedValue[1].trim()];
+        }
+    } catch {
+        return ["", ""];
+    }
+
+    return ["", ""];
+}
+
+function serializeCreatedAtRangeSearchParam(value: CreatedAtRangeFilter) {
+    const nextValue: CreatedAtRangeFilter = [value[0].trim(), value[1].trim()];
+
+    return nextValue[0] || nextValue[1] ? JSON.stringify(nextValue) : "";
+}
+
+function parseDateToExclusiveFilter(value: string) {
+    const date = parseDateFilter(value);
+
+    if (!date) {
+        return undefined;
+    }
+
+    date.setUTCDate(date.getUTCDate() + 1);
+
+    return date;
+}
+
 function buildOrderFilters(
     shopId: string,
     productId: string,
     orderNo: string,
-    status: string
+    status: string,
+    createdAtRange: CreatedAtRangeFilter
 ): OrderFilters | undefined {
     const where: OrderFilters = {};
     const parsedShopId = parseIntegerFilter(shopId);
     const parsedProductId = parseIntegerFilter(productId);
     const trimmedOrderNo = orderNo.trim();
+    const [createdAtFrom, createdAtTo] = createdAtRange;
+    const parsedCreatedAtFrom = parseDateFilter(createdAtFrom);
+    const parsedCreatedAtTo = parseDateToExclusiveFilter(createdAtTo);
 
     if (typeof parsedShopId === "number") {
         where.shopId = {
@@ -175,7 +281,72 @@ function buildOrderFilters(
         };
     }
 
+    if (parsedCreatedAtFrom || parsedCreatedAtTo) {
+        where.createdAt = {};
+
+        if (parsedCreatedAtFrom) {
+            where.createdAt.gte = serializeDateFilter(parsedCreatedAtFrom);
+        }
+
+        if (parsedCreatedAtTo) {
+            where.createdAt.lt = serializeDateFilter(parsedCreatedAtTo);
+        }
+    }
+
     return Object.keys(where).length > 0 ? where : undefined;
+}
+
+function CreatedAtRangePicker({ value }: { value: CreatedAtRangeFilter }) {
+    const [selectedRange, setSelectedRange] = useState(() => ({
+        from: parseCalendarDateValue(value[0]),
+        to: parseCalendarDateValue(value[1]),
+    }));
+    const rangeValue: CreatedAtRangeFilter = [
+        selectedRange.from ? formatDateValue(selectedRange.from) : "",
+        selectedRange.to ? formatDateValue(selectedRange.to) : "",
+    ];
+    const serializedRange = serializeCreatedAtRangeSearchParam(rangeValue);
+    const buttonLabel =
+        rangeValue[0] && rangeValue[1]
+            ? `${rangeValue[0]} - ${rangeValue[1]}`
+            : rangeValue[0]
+              ? `${rangeValue[0]} -`
+              : rangeValue[1]
+                ? `- ${rangeValue[1]}`
+                : "Created date range";
+
+    return (
+        <div className="min-w-0">
+            <Popover>
+                <PopoverTrigger asChild>
+                    <Button
+                        aria-label="Filter by created at range"
+                        className="w-full justify-start text-left font-normal"
+                        type="button"
+                        variant="outline"
+                    >
+                        <CalendarIcon />
+                        <span className="truncate">{buttonLabel}</span>
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent align="start" className="w-auto p-0">
+                    <Calendar
+                        defaultMonth={selectedRange.from ?? selectedRange.to}
+                        mode="range"
+                        numberOfMonths={2}
+                        onSelect={(nextRange) =>
+                            setSelectedRange({
+                                from: nextRange?.from,
+                                to: nextRange?.to,
+                            })
+                        }
+                        selected={selectedRange}
+                    />
+                </PopoverContent>
+            </Popover>
+            <input name="createdAtRange" type="hidden" value={serializedRange} />
+        </div>
+    );
 }
 
 export function OrderListPage() {
@@ -186,10 +357,12 @@ export function OrderListPage() {
         productId: searchParams.get("productId") ?? "",
         orderNo: searchParams.get("orderNo") ?? "",
         status: searchParams.get("status") ?? "",
+        createdAtRange: parseCreatedAtRangeSearchParam(searchParams.get("createdAtRange")),
     };
+    const [createdAtRangeFrom, createdAtRangeTo] = filters.createdAtRange;
     const page = parsePageParam(searchParams.get("page"));
     const pageSize = parsePageSizeParam(searchParams.get("pageSize"));
-    const variables = useMemo<ListSuperAdminOrdersQueryVariables>(
+    const variables = useMemo<ListAdminOrdersQueryVariables>(
         () => ({
             limit: pageSize,
             offset: (page - 1) * pageSize,
@@ -197,15 +370,25 @@ export function OrderListPage() {
                 filters.shopId,
                 filters.productId,
                 filters.orderNo,
-                filters.status
+                filters.status,
+                [createdAtRangeFrom, createdAtRangeTo]
             ),
         }),
-        [filters.orderNo, filters.productId, filters.shopId, filters.status, page, pageSize]
+        [
+            createdAtRangeFrom,
+            createdAtRangeTo,
+            filters.orderNo,
+            filters.productId,
+            filters.shopId,
+            filters.status,
+            page,
+            pageSize,
+        ]
     );
-    const { data, error, loading, refetch } = useSuperAdminQuery<
-        ListSuperAdminOrdersQuery,
-        ListSuperAdminOrdersQueryVariables
-    >(LIST_SUPER_ADMIN_ORDERS, variables);
+    const { data, error, loading, refetch } = useDashboardQuery<
+        ListAdminOrdersQuery,
+        ListAdminOrdersQueryVariables
+    >(LIST_ADMIN_ORDERS, variables);
     const orders = data?.listOrders ?? [];
 
     function applyFilters(event: React.SyntheticEvent<HTMLFormElement>) {
@@ -215,6 +398,7 @@ export function OrderListPage() {
         const nextProductId = String(formData.get("productId") ?? "").trim();
         const nextOrderNo = String(formData.get("orderNo") ?? "").trim();
         const nextStatus = String(formData.get("status") ?? "");
+        const nextCreatedAtRange = String(formData.get("createdAtRange") ?? "").trim();
 
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
@@ -243,6 +427,14 @@ export function OrderListPage() {
                 nextParams.delete("status");
             }
 
+            if (nextCreatedAtRange) {
+                nextParams.set("createdAtRange", nextCreatedAtRange);
+            } else {
+                nextParams.delete("createdAtRange");
+            }
+
+            nextParams.delete("createdAtFrom");
+            nextParams.delete("createdAtTo");
             nextParams.set("page", "1");
 
             return nextParams;
@@ -256,6 +448,9 @@ export function OrderListPage() {
             nextParams.delete("productId");
             nextParams.delete("orderNo");
             nextParams.delete("status");
+            nextParams.delete("createdAtRange");
+            nextParams.delete("createdAtFrom");
+            nextParams.delete("createdAtTo");
             nextParams.set("page", "1");
 
             return nextParams;
@@ -335,7 +530,11 @@ export function OrderListPage() {
                     <option value="completed">completed</option>
                     <option value="cancelled">cancelled</option>
                 </select>
-                <Button type="submit" variant="secondary" className="w-full">
+                <CreatedAtRangePicker
+                    key={searchParamsKey}
+                    value={[createdAtRangeFrom, createdAtRangeTo]}
+                />
+                <Button type="submit" className="w-full">
                     <FilterIcon />
                     Filter
                 </Button>

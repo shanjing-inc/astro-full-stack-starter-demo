@@ -7,16 +7,16 @@ import BaseLayout from "@/layouts/base-layout.astro";
 const hasD1Binding = Boolean(env.DB);
 const featureCards = [
     {
-        description: "读取 D1 binding，验证 Drizzle D1 provider 和业务表查询。",
-        href: "/test/mysql",
-        label: "D1 测试页",
-        tag: "database",
-    },
-    {
         description: "通过 Cloudflare demo 的 GraphQL API 读取 shop、product、order 并创建 shop。",
         href: "/test/graphql",
         label: "GraphQL 测试页",
         tag: "graphql",
+    },
+    {
+        description: "读取 D1 binding，验证 Drizzle D1 provider 和业务表查询。",
+        href: "/test/database",
+        label: "Database 测试页",
+        tag: "database",
     },
     {
         description: "投递 Cloudflare Queues 测试任务，并查看 D1 中的异步执行状态。",
@@ -44,9 +44,16 @@ const featureCards = [
     },
     {
         description:
-            "使用 D1 user/account/session 表演示 better-auth install / login / logout 页面流。",
-        href: "/super-admin",
-        label: "Super Admin",
+            "会员中心示例，验证 Cloudflare member dashboard、会员权限和 member GraphQL 端点。",
+        href: "/member",
+        label: "Member",
+        tag: "member",
+    },
+    {
+        description:
+            "管理商品、店铺、订单和队列运行状态，验证 D1 后台 SPA、权限和 GraphQL 管理端点。",
+        href: "/replace-with-your-admin-path",
+        label: "Admin",
         tag: "admin",
     },
 ];
@@ -62,9 +69,9 @@ const featureCards = [
                 Astro 6 + Cloudflare Worker + D1 部署样例
             </h1>
             <p class="max-w-2xl text-base/8 text-muted-foreground sm:text-lg">
-                当前 demo 保留与 Deno + MySQL demo 对齐的页面入口，并把数据库链路切换为 Cloudflare
-                D1 provider。Queue 页面可投递 Cloudflare Queues 任务，WebSocket 和 SSE 页面验证
-                Worker 原生实时能力。
+                当前 demo 保留与 Deno + MySQL demo 对齐的测试入口与后台入口，并把数据库链路切换为
+                Cloudflare D1 provider。Queue 页面可投递 Cloudflare Queues 任务，Member 和 Super
+                Admin 用于验证两套 dashboard、权限与 GraphQL 端点。
             </p>
             <div class="flex flex-wrap gap-3 text-sm text-muted-foreground">
                 <span class="rounded-full border bg-secondary px-4 py-2 text-secondary-foreground">
@@ -141,7 +148,7 @@ const featureCards = [
                     <div class="flex flex-wrap gap-3">
                         <a
                             class="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-primary/90"
-                            href="/test/mysql"
+                            href="/test/database"
                         >
                             验证 D1
                         </a>

@@ -36,13 +36,14 @@ function getAllowedHosts() {
     return hosts;
 }
 
-const superAdminAccessControl = createAccessControl({
+const accessStatements = {
+    dashboard: ["access:admin", "access:member"],
     order: ["list"],
     product: ["list"],
     queue: ["read"],
     session: ["list", "revoke", "delete"],
     shop: ["list"],
-    superAdmin: ["access"],
+    system: ["owner"],
     user: [
         "create",
         "list",
@@ -54,15 +55,20 @@ const superAdminAccessControl = createAccessControl({
         "get",
         "update",
     ],
-} as const);
+} as const;
 
-const superAdminRole = superAdminAccessControl.newRole({
+const accessControl = createAccessControl(accessStatements);
+
+const ownerRole = accessControl.newRole(accessStatements);
+
+const adminRole = accessControl.newRole({
+    dashboard: ["access:admin", "access:member"],
     order: ["list"],
     product: ["list"],
     queue: ["read"],
     session: ["list", "revoke", "delete"],
     shop: ["list"],
-    superAdmin: ["access"],
+    system: [],
     user: [
         "create",
         "list",
@@ -76,13 +82,25 @@ const superAdminRole = superAdminAccessControl.newRole({
     ],
 });
 
-const userRole = superAdminAccessControl.newRole({
+const memberRole = accessControl.newRole({
+    dashboard: ["access:member"],
     order: [],
     product: [],
     queue: [],
     session: [],
     shop: [],
-    superAdmin: [],
+    system: [],
+    user: [],
+});
+
+const userRole = accessControl.newRole({
+    dashboard: [],
+    order: [],
+    product: [],
+    queue: [],
+    session: [],
+    shop: [],
+    system: [],
     user: [],
 });
 
@@ -108,7 +126,9 @@ export const auth = betterAuth({
     plugins: [
         admin({
             roles: {
-                admin: superAdminRole,
+                admin: adminRole,
+                member: memberRole,
+                owner: ownerRole,
                 user: userRole,
             },
         }),

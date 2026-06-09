@@ -24,6 +24,19 @@ input CreateShopSetInput {
     status: String
 }
 
+"""
+DateTime instant serialized as a second-level UTC ISO string. Inputs must include Z or a UTC offset in UTC mode; legacy strings without timezone use TZ when TZ is non-UTC.
+"""
+scalar DateTime
+
+input DateTimeFilters {
+    eq: DateTime
+    gt: DateTime
+    gte: DateTime
+    lt: DateTime
+    lte: DateTime
+}
+
 input InnerOrder {
     direction: OrderDirection!
     priority: Int!
@@ -67,6 +80,7 @@ enum OrderDirection {
 }
 
 input OrderFilters {
+    createdAt: DateTimeFilters
     id: IntFilters
     orderNo: StringFilters
     productId: IntFilters
@@ -75,7 +89,7 @@ input OrderFilters {
 }
 
 type OrderItem {
-    createdAt: String
+    createdAt: DateTime
     id: ID
     orderNo: String
     product: ProductItem
@@ -87,7 +101,7 @@ type OrderItem {
     status: String
     totalAmountInCents: Int
     unitPriceInCents: Int
-    updatedAt: String
+    updatedAt: DateTime
 }
 
 input OrderOrderBy {
@@ -111,7 +125,7 @@ input ProductFilters {
 }
 
 type ProductItem {
-    createdAt: String
+    createdAt: DateTime
     id: ID
     inventoryCount: Int
     name: String
@@ -121,7 +135,7 @@ type ProductItem {
     shopId: Int
     sku: String
     status: String
-    updatedAt: String
+    updatedAt: DateTime
 }
 
 input ProductOrderBy {
@@ -307,14 +321,14 @@ input ShopFilters {
 }
 
 type ShopItem {
-    createdAt: String
+    createdAt: DateTime
     id: ID
     name: String
     orders: [OrderItem!]
     products: [ProductItem!]
     slug: String
     status: String
-    updatedAt: String
+    updatedAt: DateTime
 }
 
 input ShopOrderBy {
@@ -370,7 +384,7 @@ input UpdateShopSetInput {
 }
 
 input UpdateUserSetInput {
-    banExpires: String
+    banExpires: DateTime
     banReason: String
     banned: Boolean
     name: String
@@ -386,17 +400,17 @@ input UserFilters {
 }
 
 type UserItem {
-    banExpires: String
+    banExpires: DateTime
     banReason: String
     banned: Boolean
-    createdAt: String
+    createdAt: DateTime
     email: String
     emailVerified: Boolean
     id: ID
     image: String
     name: String
     role: String
-    updatedAt: String
+    updatedAt: DateTime
 }
 
 input UserOrderBy {

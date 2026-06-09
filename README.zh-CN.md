@@ -47,11 +47,11 @@ pnpm check
 启动开发服务器后，可以打开 `src/pages/test/*.astro` 对应页面，在浏览器里验证 demo 功能：
 
 - `/test/cache`：通过统一 cache contract 验证 Workers KV、Cache API 和 Durable Objects，并通过锁动作链接展示锁行为。
-- `/test/graphql`：向由 D1 provider 支撑的 member 和 super-admin GraphQL endpoint 发送预设请求或自定义请求。
-- `/test/mysql`：沿用共享路由名，检查 D1 binding、Drizzle D1 provider，并预览 `shop` 表。
+- `/test/graphql`：向由 D1 provider 支撑的 member 和 admin GraphQL endpoint 发送预设请求或自定义请求。
+- `/test/database`：检查 D1 binding、Drizzle D1 provider，并预览 `shop` 表。
 - `/test/queue`：按逻辑队列派发 Cloudflare Queues demo job，展示当前请求结果，并显示 D1 记录的执行历史。
 - `/test/sse`：连接公开 SSE endpoint，展示收到的 server-sent events。
-- `/test/websocket`：测试 public、member 和 super-admin WebSocket endpoint，覆盖 ping、echo、自定义消息和服务端主动推送。
+- `/test/websocket`：测试 public、member 和 admin WebSocket endpoint，覆盖 ping、echo、自定义消息和服务端主动推送。
 
 这些页面是可运行的集成示例，适合本地开发时做人工检查，也适合用来理解 demo 如何把 starter 基础能力接入 Cloudflare 运行时。
 

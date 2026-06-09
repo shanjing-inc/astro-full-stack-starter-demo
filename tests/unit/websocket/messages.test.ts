@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { parseWebSocketClientMessage } from "@shanjing/astro-full-stack-starter/websocket/protocol/messages";
 import { adapter as memberWebSocketAdapter } from "@/websocket/adapters/member";
 import { adapter as publicWebSocketAdapter } from "@/websocket/adapters/public";
-import { adapter as superAdminWebSocketAdapter } from "@/websocket/adapters/super-admin";
+import { adapter as adminWebSocketAdapter } from "@/websocket/adapters/admin";
 
 vi.mock("@/observability/sentry", () => ({
     reportException: vi.fn(),
@@ -26,7 +26,7 @@ describe("Cloudflare D1 WebSocket messages", () => {
         expect(memberWebSocketAdapter.cloudflare).toEqual({
             driver: "webSocketPair",
         });
-        expect(superAdminWebSocketAdapter.cloudflare).toEqual({
+        expect(adminWebSocketAdapter.cloudflare).toEqual({
             driver: "webSocketPair",
         });
     });
@@ -61,7 +61,7 @@ describe("Cloudflare D1 WebSocket messages", () => {
         ).toThrow();
     });
 
-    it("creates endpoint handlers for public, member, and super-admin endpoints", () => {
+    it("creates endpoint handlers for public, member, and admin endpoints", () => {
         const handlerOptions = {
             isSocketOpen: () => true,
             sendError: vi.fn(),
@@ -75,7 +75,7 @@ describe("Cloudflare D1 WebSocket messages", () => {
             {} as never,
             handlerOptions
         );
-        const superAdminHandlers = superAdminWebSocketAdapter.endpoint.createHandlers(
+        const adminHandlers = adminWebSocketAdapter.endpoint.createHandlers(
             {} as never,
             handlerOptions
         );
@@ -89,10 +89,10 @@ describe("Cloudflare D1 WebSocket messages", () => {
             })
         ).toBe(true);
         expect(memberHandlers.handleMessage({ type: "custom" })).toBe(false);
-        expect(superAdminHandlers.handleMessage({ type: "custom" })).toBe(false);
+        expect(adminHandlers.handleMessage({ type: "custom" })).toBe(false);
 
         publicHandlers.dispose();
         memberHandlers.dispose();
-        superAdminHandlers.dispose();
+        adminHandlers.dispose();
     });
 });

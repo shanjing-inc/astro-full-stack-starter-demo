@@ -21,19 +21,17 @@ import { registerGetShopQuery, registerListShopsQuery } from "@/graphql/queries/
 import { registerOrderTypes } from "@/graphql/types/order";
 import { registerProductTypes } from "@/graphql/types/product";
 import { registerShopTypes } from "@/graphql/types/shop";
+import { registerCommonTypes } from "@shanjing/astro-full-stack-starter/graphql/types/common";
 import { cloudflareQueueConfigs, getCloudflareQueueConfig } from "@/queues/config";
 import { findCloudflareQueueDemoJob, type QueueDemoJobData } from "@/queues/jobs/queue-demo.job";
-import {
-    registerSuperAdminCommonTypes,
-    registerSuperAdminGraphQLSchema,
-} from "@shanjing/astro-full-stack-starter/graphql/schemas/super-admin";
+import { registerDashboardGraphQLSchema } from "@shanjing/astro-full-stack-starter/graphql/schemas/dashboard";
 import { createExecutionStoreQueueDashboardBackend } from "@shanjing/astro-full-stack-starter/queue/dashboard";
 
 import type { GraphQLContext } from "@/graphql/context";
 import type { QueueExecutionRecord } from "@shanjing/astro-full-stack-starter/queue/core";
 
 const builder = createBuilder();
-const commonTypes = registerSuperAdminCommonTypes(builder);
+const commonTypes = registerCommonTypes(builder);
 const orderTypes = registerOrderTypes(builder, commonTypes);
 const productTypes = registerProductTypes(builder, commonTypes);
 const shopTypes = registerShopTypes(builder, commonTypes);
@@ -111,7 +109,7 @@ async function retryQueueExecutionRecord(context: GraphQLContext, record: QueueE
     };
 }
 
-registerSuperAdminGraphQLSchema(builder, {
+registerDashboardGraphQLSchema(builder, {
     commonTypes,
     getQueueDashboardBackend: (context: GraphQLContext) =>
         createExecutionStoreQueueDashboardBackend({
@@ -156,6 +154,6 @@ registerCreateShopMutation(builder, shopTypes);
 registerDeleteShopMutation(builder, shopTypes);
 registerUpdateShopMutation(builder, shopTypes);
 
-export const superAdminSchema = builder.toSchema({});
+export const adminSchema = builder.toSchema({});
 
-export default superAdminSchema;
+export default adminSchema;

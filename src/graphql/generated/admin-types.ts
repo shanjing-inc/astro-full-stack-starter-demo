@@ -16,6 +16,8 @@ export type Scalars = {
     Boolean: { input: boolean; output: boolean };
     Int: { input: number; output: number };
     Float: { input: number; output: number };
+    /** DateTime instant serialized as a second-level UTC ISO string. Inputs must include Z or a UTC offset in UTC mode; legacy strings without timezone use TZ when TZ is non-UTC. */
+    DateTime: { input: string; output: string };
     JSON: { input: any; output: any };
 };
 
@@ -43,6 +45,14 @@ export type CreateShopSetInput = {
     name: Scalars["String"]["input"];
     slug: Scalars["String"]["input"];
     status?: InputMaybe<Scalars["String"]["input"]>;
+};
+
+export type DateTimeFilters = {
+    eq?: InputMaybe<Scalars["DateTime"]["input"]>;
+    gt?: InputMaybe<Scalars["DateTime"]["input"]>;
+    gte?: InputMaybe<Scalars["DateTime"]["input"]>;
+    lt?: InputMaybe<Scalars["DateTime"]["input"]>;
+    lte?: InputMaybe<Scalars["DateTime"]["input"]>;
 };
 
 export type InnerOrder = {
@@ -137,6 +147,7 @@ export enum OrderDirection {
 }
 
 export type OrderFilters = {
+    createdAt?: InputMaybe<DateTimeFilters>;
     id?: InputMaybe<IntFilters>;
     orderNo?: InputMaybe<StringFilters>;
     productId?: InputMaybe<IntFilters>;
@@ -146,7 +157,7 @@ export type OrderFilters = {
 
 export type OrderItem = {
     __typename?: "OrderItem";
-    createdAt?: Maybe<Scalars["String"]["output"]>;
+    createdAt?: Maybe<Scalars["DateTime"]["output"]>;
     id?: Maybe<Scalars["ID"]["output"]>;
     orderNo?: Maybe<Scalars["String"]["output"]>;
     product?: Maybe<ProductItem>;
@@ -158,7 +169,7 @@ export type OrderItem = {
     status?: Maybe<Scalars["String"]["output"]>;
     totalAmountInCents?: Maybe<Scalars["Int"]["output"]>;
     unitPriceInCents?: Maybe<Scalars["Int"]["output"]>;
-    updatedAt?: Maybe<Scalars["String"]["output"]>;
+    updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
 };
 
 export type OrderOrderBy = {
@@ -183,7 +194,7 @@ export type ProductFilters = {
 
 export type ProductItem = {
     __typename?: "ProductItem";
-    createdAt?: Maybe<Scalars["String"]["output"]>;
+    createdAt?: Maybe<Scalars["DateTime"]["output"]>;
     id?: Maybe<Scalars["ID"]["output"]>;
     inventoryCount?: Maybe<Scalars["Int"]["output"]>;
     name?: Maybe<Scalars["String"]["output"]>;
@@ -193,7 +204,7 @@ export type ProductItem = {
     shopId?: Maybe<Scalars["Int"]["output"]>;
     sku?: Maybe<Scalars["String"]["output"]>;
     status?: Maybe<Scalars["String"]["output"]>;
-    updatedAt?: Maybe<Scalars["String"]["output"]>;
+    updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
 };
 
 export type ProductOrderBy = {
@@ -439,14 +450,14 @@ export type ShopFilters = {
 
 export type ShopItem = {
     __typename?: "ShopItem";
-    createdAt?: Maybe<Scalars["String"]["output"]>;
+    createdAt?: Maybe<Scalars["DateTime"]["output"]>;
     id?: Maybe<Scalars["ID"]["output"]>;
     name?: Maybe<Scalars["String"]["output"]>;
     orders?: Maybe<Array<OrderItem>>;
     products?: Maybe<Array<ProductItem>>;
     slug?: Maybe<Scalars["String"]["output"]>;
     status?: Maybe<Scalars["String"]["output"]>;
-    updatedAt?: Maybe<Scalars["String"]["output"]>;
+    updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
 };
 
 export type ShopOrderBy = {
@@ -502,7 +513,7 @@ export type UpdateShopSetInput = {
 };
 
 export type UpdateUserSetInput = {
-    banExpires?: InputMaybe<Scalars["String"]["input"]>;
+    banExpires?: InputMaybe<Scalars["DateTime"]["input"]>;
     banReason?: InputMaybe<Scalars["String"]["input"]>;
     banned?: InputMaybe<Scalars["Boolean"]["input"]>;
     name?: InputMaybe<Scalars["String"]["input"]>;
@@ -519,17 +530,17 @@ export type UserFilters = {
 
 export type UserItem = {
     __typename?: "UserItem";
-    banExpires?: Maybe<Scalars["String"]["output"]>;
+    banExpires?: Maybe<Scalars["DateTime"]["output"]>;
     banReason?: Maybe<Scalars["String"]["output"]>;
     banned?: Maybe<Scalars["Boolean"]["output"]>;
-    createdAt?: Maybe<Scalars["String"]["output"]>;
+    createdAt?: Maybe<Scalars["DateTime"]["output"]>;
     email?: Maybe<Scalars["String"]["output"]>;
     emailVerified?: Maybe<Scalars["Boolean"]["output"]>;
     id?: Maybe<Scalars["ID"]["output"]>;
     image?: Maybe<Scalars["String"]["output"]>;
     name?: Maybe<Scalars["String"]["output"]>;
     role?: Maybe<Scalars["String"]["output"]>;
-    updatedAt?: Maybe<Scalars["String"]["output"]>;
+    updatedAt?: Maybe<Scalars["DateTime"]["output"]>;
 };
 
 export type UserOrderBy = {
@@ -541,9 +552,9 @@ export type UserOrderBy = {
     updatedAt?: InputMaybe<InnerOrder>;
 };
 
-export type GetSuperAdminDashboardQueryVariables = Exact<{ [key: string]: never }>;
+export type GetAdminDashboardQueryVariables = Exact<{ [key: string]: never }>;
 
-export type GetSuperAdminDashboardQuery = {
+export type GetAdminDashboardQuery = {
     __typename?: "Query";
     listShops?: Array<{
         __typename?: "ShopItem";
@@ -570,13 +581,13 @@ export type GetSuperAdminDashboardQuery = {
     }> | null;
 };
 
-export type ListSuperAdminOrdersQueryVariables = Exact<{
+export type ListAdminOrdersQueryVariables = Exact<{
     where?: InputMaybe<OrderFilters>;
     limit?: InputMaybe<Scalars["Int"]["input"]>;
     offset?: InputMaybe<Scalars["Int"]["input"]>;
 }>;
 
-export type ListSuperAdminOrdersQuery = {
+export type ListAdminOrdersQuery = {
     __typename?: "Query";
     listOrders?: Array<{
         __typename?: "OrderItem";
@@ -606,13 +617,13 @@ export type ListSuperAdminOrdersQuery = {
     }> | null;
 };
 
-export type ListSuperAdminProductsQueryVariables = Exact<{
+export type ListAdminProductsQueryVariables = Exact<{
     where?: InputMaybe<ProductFilters>;
     limit?: InputMaybe<Scalars["Int"]["input"]>;
     offset?: InputMaybe<Scalars["Int"]["input"]>;
 }>;
 
-export type ListSuperAdminProductsQuery = {
+export type ListAdminProductsQuery = {
     __typename?: "Query";
     listProducts?: Array<{
         __typename?: "ProductItem";
@@ -640,13 +651,13 @@ export type ListSuperAdminProductsQuery = {
     }> | null;
 };
 
-export type ListSuperAdminShopsQueryVariables = Exact<{
+export type ListAdminShopsQueryVariables = Exact<{
     where?: InputMaybe<ShopFilters>;
     limit?: InputMaybe<Scalars["Int"]["input"]>;
     offset?: InputMaybe<Scalars["Int"]["input"]>;
 }>;
 
-export type ListSuperAdminShopsQuery = {
+export type ListAdminShopsQuery = {
     __typename?: "Query";
     listShops?: Array<{
         __typename?: "ShopItem";

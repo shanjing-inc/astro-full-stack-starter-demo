@@ -12,7 +12,7 @@ export function LogoutActions() {
                 </a>
             </Button>
             <Button asChild className="w-full sm:w-auto">
-                <a href="/super-admin/login">
+                <a href="/replace-with-your-admin-path/login">
                     <LogInIcon className="size-4" />
                     重新登录
                 </a>

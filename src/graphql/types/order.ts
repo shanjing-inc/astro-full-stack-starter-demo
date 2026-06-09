@@ -4,29 +4,32 @@ import { GraphQLError } from "graphql";
 
 import { order, orderStatusEnum } from "@/db/schemas";
 import {
+    buildDateTimeFilterConditions,
     buildIntFilterConditions,
+    buildRelationDateTimeFilters,
     buildRelationIntFilters,
     buildRelationStringFilters,
     buildStringFilterConditions,
 } from "@shanjing/astro-full-stack-starter/graphql/helpers/filters";
 import { buildOrderByObject } from "@shanjing/astro-full-stack-starter/graphql/helpers/order";
 import {
+    dateTimeFiltersSchema,
     intFiltersSchema,
     innerOrderSchema,
     limitArgSchema,
     offsetArgSchema,
     stringFiltersSchema,
-} from "@/graphql/types/common";
-import { serializeDateTime } from "@shanjing/astro-full-stack-starter/graphql/utils";
+} from "@shanjing/astro-full-stack-starter/graphql/types/common";
 
 import type { PothosBuilder } from "@/graphql/builder";
 import type { Order } from "@/db/schemas";
 import type {
     CommonTypes,
+    DateTimeFiltersInputShape,
     InnerOrderInputShape,
     IntFiltersInputShape,
     StringFiltersInputShape,
-} from "@/graphql/types/common";
+} from "@shanjing/astro-full-stack-starter/graphql/types/common";
 
 const orderFiltersSchema = z.object({
     id: intFiltersSchema.optional(),
@@ -34,6 +37,7 @@ const orderFiltersSchema = z.object({
     productId: intFiltersSchema.optional(),
     shopId: intFiltersSchema.optional(),
     status: stringFiltersSchema.optional(),
+    createdAt: dateTimeFiltersSchema.optional(),
 });
 const orderOrderBySchema = z
     .object({
@@ -95,6 +99,7 @@ type OrderFiltersShape = {
     productId?: IntFiltersInputShape;
     shopId?: IntFiltersInputShape;
     status?: StringFiltersInputShape;
+    createdAt?: DateTimeFiltersInputShape;
 };
 
 type OrderOrderByShape = {
@@ -149,6 +154,9 @@ export function registerOrderTypes(builder: PothosBuilder, commonTypes: CommonTy
             }),
             status: t.field({
                 type: commonTypes.stringFilters,
+            }),
+            createdAt: t.field({
+                type: commonTypes.dateTimeFilters,
             }),
         }),
     });
@@ -242,13 +250,11 @@ export function registerOrderTypes(builder: PothosBuilder, commonTypes: CommonTy
             remark: t.exposeString("remark", {
                 nullable: true,
             }),
-            createdAt: t.field({
-                type: "String",
-                resolve: (orderRecord) => serializeDateTime(orderRecord.createdAt),
+            createdAt: t.expose("createdAt", {
+                type: commonTypes.dateTime,
             }),
-            updatedAt: t.field({
-                type: "String",
-                resolve: (orderRecord) => serializeDateTime(orderRecord.updatedAt),
+            updatedAt: t.expose("updatedAt", {
+                type: commonTypes.dateTime,
             }),
             shop: t.relation("shop"),
             product: t.relation("product"),
@@ -327,6 +333,7 @@ export function buildOrderWhereClause(where: ReturnType<typeof parseOrderWhereIn
         ...buildIntFilterConditions(order.productId, where.productId),
         ...buildStringFilterConditions(order.orderNo, where.orderNo),
         ...buildStringFilterConditions(order.status, where.status),
+        ...buildDateTimeFilterConditions(order.createdAt, where.createdAt),
     ];
 
     if (conditions.length === 0) {
@@ -343,6 +350,7 @@ export function buildOrderRelationWhere(where: ReturnType<typeof parseOrderWhere
     const productIdFilters = buildRelationIntFilters(where.productId);
     const orderNoFilters = buildRelationStringFilters(where.orderNo);
     const statusFilters = buildRelationStringFilters(where.status);
+    const createdAtFilters = buildRelationDateTimeFilters(where.createdAt);
 
     if (idFilters) {
         relationWhere.id = idFilters;
@@ -362,6 +370,10 @@ export function buildOrderRelationWhere(where: ReturnType<typeof parseOrderWhere
 
     if (statusFilters) {
         relationWhere.status = statusFilters;
+    }
+
+    if (createdAtFilters) {
+        relationWhere.createdAt = createdAtFilters;
     }
 
     return relationWhere;

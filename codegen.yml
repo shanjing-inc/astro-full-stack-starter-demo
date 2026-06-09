@@ -1,16 +1,26 @@
 generates:
-    ./src/graphql/generated/super-admin-types.ts:
-        schema: ./src/graphql/generated/super-admin-schema.graphql
+    ./src/graphql/generated/admin-types.ts:
+        schema: ./src/graphql/generated/admin-schema.graphql
         documents:
-            - "./src/spa/super-admin/**/*.{ts,tsx}"
+            - "./src/dashboards/admin/**/*.{ts,tsx}"
         plugins:
             - typescript
             - typescript-operations
+        config:
+            scalars:
+                DateTime:
+                    input: string
+                    output: string
     ./src/graphql/generated/member-types.ts:
         schema: ./src/graphql/generated/member-schema.graphql
         documents:
-            - "./src/spa/member/**/*.{ts,tsx}"
+            - "./src/dashboards/member/**/*.{ts,tsx}"
         plugins:
             - typescript
             - typescript-operations
+        config:
+            scalars:
+                DateTime:
+                    input: string
+                    output: string
 ignoreNoDocuments: true

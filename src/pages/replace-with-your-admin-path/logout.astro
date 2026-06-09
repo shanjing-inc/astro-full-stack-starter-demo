@@ -1,10 +1,10 @@
 ---
 import { CheckCircle2Icon } from "lucide-react";
 
-import { LogoutActions } from "@/components/super-admin/logout-actions";
+import { LogoutActions } from "@/components/admin/logout-actions";
 import BaseLayout from "@/layouts/base-layout.astro";
 import { auth } from "@/lib/auth";
-import { appendAuthCookies } from "@shanjing/astro-full-stack-starter/super-admin";
+import { appendAuthCookies } from "@shanjing/astro-full-stack-starter/dashboard/auth";
 
 const authResponse = await auth.api.signOut({
     headers: Astro.request.headers,
@@ -27,7 +27,7 @@ appendAuthCookies(authResponse.headers, Astro.response.headers);
                         <CheckCircle2Icon className="size-6" aria-hidden="true" />
                     </div>
                     <div class="space-y-2">
-                        <p class="text-sm font-medium text-muted-foreground">Super Admin</p>
+                        <p class="text-sm font-medium text-muted-foreground">Admin</p>
                         <h1 class="text-2xl font-semibold tracking-normal">已退出登录</h1>
                         <p class="mx-auto max-w-sm text-sm/6 text-muted-foreground">
                             当前管理员会话已安全结束，可以返回网站首页或重新进入后台。

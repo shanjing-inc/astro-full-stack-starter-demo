@@ -10,11 +10,20 @@ test.describe("Cloudflare D1 demo pages", () => {
 
         await page.getByRole("button", { name: "CreateShop" }).click();
 
-        await expect(page.locator("#graphql-endpoint-path")).toHaveText("/api/graphql/super-admin");
+        await expect(page.locator("#graphql-endpoint-path")).toHaveText("/api/graphql/admin");
         await expect(page.locator("#graphql-query")).toHaveValue(/mutation CreateShop/);
     });
 
     test("renders Cloudflare platform boundary pages", async ({ page }) => {
+        await page.goto("/test/database");
+        await expect(page).toHaveTitle("Database Test");
+        await expect(page.locator("body")).toContainText("unixepoch()");
+        await expect(page.locator("body")).toContainText("浏览器时区");
+        await expect(page.locator("body")).toContainText("浏览器时间");
+        await expect(page.locator("body")).toContainText("createdAt（数据库原始值）");
+        await expect(page.locator("body")).toContainText("createdAt（本地时间）");
+        await expect(page.getByRole("button", { name: "新增随机店铺" })).toBeVisible();
+
         await page.goto("/test/queue");
         await expect(page).toHaveTitle("Queue Test");
         await expect(page.locator("body")).toContainText("Cloudflare Queues");
