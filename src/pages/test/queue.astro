@@ -306,13 +306,13 @@ const statusLabels = {
                                     <tr class="border-b bg-card last:border-b-0">
                                         <td class="p-3">{getRecordQueue(record)}</td>
                                         <td class="p-3">{record.physicalQueueName ?? "-"}</td>
-                                        <td class="max-w-64 break-all p-3">{record.jobId}</td>
+                                        <td class="max-w-64 p-3 break-all">{record.jobId}</td>
                                         <td class="p-3">{record.mode ?? "-"}</td>
                                         <td class="p-3">{statusLabels[record.status]}</td>
                                         <td class="p-3">{record.attempt}</td>
                                         <td class="p-3">{record.requestedAt}</td>
                                         <td class="p-3">{record.processedAt ?? "-"}</td>
-                                        <td class="max-w-80 break-words p-3">
+                                        <td class="max-w-80 p-3 wrap-break-word">
                                             {record.error ?? "-"}
                                         </td>
                                     </tr>
