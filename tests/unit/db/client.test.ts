@@ -82,7 +82,7 @@ describe("database client runtime config", () => {
 
         expect(createPoolMock).toHaveBeenCalledWith({
             connectionLimit: 30,
-            dateStrings: ["DATETIME"],
+            dateStrings: ["DATETIME", "TIMESTAMP"],
             idleTimeout: 7000,
             maxIdle: 20,
             queueLimit: 200,
@@ -123,7 +123,7 @@ describe("database client runtime config", () => {
 
         expect(createPoolMock).toHaveBeenCalledWith({
             connectionLimit: 30,
-            dateStrings: ["DATETIME"],
+            dateStrings: ["DATETIME", "TIMESTAMP"],
             idleTimeout: 7000,
             maxIdle: 20,
             queueLimit: 200,
@@ -211,8 +211,8 @@ describe("database client runtime config", () => {
         await mysqlPool.execute("SELECT 1");
 
         expect(createPoolMock).toHaveBeenCalledWith({
-            dateStrings: ["DATETIME"],
-            timezone: "Z",
+            dateStrings: ["DATETIME", "TIMESTAMP"],
+            timezone: "local",
             uri: "mysql://user:pass@127.0.0.1:3306/app?charset=utf8mb4",
         });
         expect(connectionMock.query).toHaveBeenCalledWith("SET time_zone = 'Asia/Shanghai'");
@@ -255,7 +255,7 @@ describe("database client runtime config", () => {
         const { getMysqlPool } = await import("@/db/client");
 
         expect(() => getMysqlPool()).toThrow(
-            "DATABASE_URL MySQL query parameter timezone has been removed. Set TZ to control MySQL DATETIME storage timezone."
+            "DATABASE_URL MySQL query parameter timezone has been removed. Set TZ to control MySQL DATETIME/TIMESTAMP storage timezone."
         );
     });
 });

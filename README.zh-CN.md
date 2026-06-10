@@ -33,6 +33,7 @@ pnpm --filter deno-mysql-demo run
 pnpm --filter deno-mysql-demo dev
 pnpm --filter deno-mysql-demo test
 pnpm --filter deno-mysql-demo check
+pnpm --filter deno-mysql-demo check:pre-commit
 pnpm --filter deno-mysql-demo build
 ```
 
@@ -41,6 +42,8 @@ pnpm --filter deno-mysql-demo build
 ```bash
 pnpm check
 ```
+
+这个 demo 也支持独立仓库场景的提交前检查。安装依赖后，`prepare` 会初始化 Husky；提交时 `pnpm check:pre-commit` 会先检查暂存文件格式。纯文档变更只检查格式，代码或配置变更会继续运行本 demo 的 `pnpm check`。
 
 ## 浏览器测试页
 
