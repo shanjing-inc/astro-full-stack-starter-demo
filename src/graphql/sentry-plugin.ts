@@ -38,7 +38,7 @@ function createGraphQLRequestData(params: GraphQLParams, operationName: string |
 }
 
 function getOriginalGraphQLError(error: GraphQLError) {
-    return error.originalError ?? error.extensions?.originalError ?? error;
+    return error.originalError ?? error;
 }
 
 function reportGraphQLError(

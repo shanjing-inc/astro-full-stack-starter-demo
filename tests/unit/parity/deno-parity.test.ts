@@ -121,8 +121,8 @@ describe("Cloudflare demo parity with Deno demo", () => {
 
         expect(adminRoutes).toContain("LayoutDashboardIcon");
         expect(adminRoutes).toContain('id: "project.dashboard"');
+        expect(adminRoutes).toContain('label: "Dashboard"');
         expect(adminRoutes).toContain('path: "/"');
-        expect(adminRoutes).toContain('group: "overview"');
         expect(adminRoutes).toContain("icon: LayoutDashboardIcon");
         expect(adminRoutes).toContain("order: 0");
     });

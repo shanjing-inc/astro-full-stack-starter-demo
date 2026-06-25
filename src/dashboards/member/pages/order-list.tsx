@@ -154,7 +154,7 @@ export function MemberOrderListPage() {
         <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-normal">Order List</h1>
+                    <h1 className="mt-1 text-2xl font-semibold tracking-normal">Order List</h1>
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                         会员可查看的订单列表。{loading ? "" : `当前 ${orders.length} 条记录。`}
                     </p>

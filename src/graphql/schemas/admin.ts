@@ -111,6 +111,7 @@ async function retryQueueExecutionRecord(context: GraphQLContext, record: QueueE
 
 registerDashboardGraphQLSchema(builder, {
     commonTypes,
+    createUser: (input, context: GraphQLContext) => context.createDashboardUser(input),
     getQueueDashboardBackend: (context: GraphQLContext) =>
         createExecutionStoreQueueDashboardBackend({
             capabilities: {

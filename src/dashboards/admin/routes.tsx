@@ -3,9 +3,9 @@ import { LayoutDashboardIcon, PackageIcon, ReceiptTextIcon, StoreIcon } from "lu
 import type { ComponentType } from "react";
 
 import {
-    defineDashboardRoutes,
-    queueDashboardRoutes,
-    userDashboardRoutes,
+    defineDashboardEntries,
+    queueDashboardEntries,
+    userDashboardEntries,
 } from "@shanjing/astro-full-stack-starter/dashboard/client";
 
 import { DashboardPage } from "@/dashboards/admin/pages/dashboard";
@@ -14,65 +14,73 @@ import { ProductListPage } from "@/dashboards/admin/pages/product-list";
 import { ShopListPage } from "@/dashboards/admin/pages/shop-list";
 
 /**
- * Project-owned admin dashboard business routes.
+ * Project-owned admin dashboard entries.
  */
-export const adminRoutes = defineDashboardRoutes<ComponentType>([
+export const adminEntries = defineDashboardEntries<ComponentType>([
     {
         id: "project.dashboard",
-        path: "/",
-        title: "Dashboard",
-        component: DashboardPage,
-        permission: {
-            dashboard: ["access:admin"],
-        },
         nav: {
-            group: "overview",
+            label: "Dashboard",
             icon: LayoutDashboardIcon,
             order: 0,
         },
+        page: {
+            title: "Dashboard",
+            path: "/",
+            component: DashboardPage,
+        },
+        permission: {
+            dashboard: ["access:admin"],
+        },
     },
-    ...userDashboardRoutes,
+    ...userDashboardEntries,
     {
         id: "shop.list",
-        path: "/shop/list",
-        title: "店铺",
-        component: ShopListPage,
-        permission: {
-            shop: ["list"],
-        },
         nav: {
-            group: "business",
+            label: "店铺管理",
             icon: StoreIcon,
             order: 10,
+        },
+        page: {
+            title: "店铺管理",
+            path: "/shop/list",
+            component: ShopListPage,
+        },
+        permission: {
+            shop: ["list"],
         },
     },
     {
         id: "product.list",
-        path: "/product/list",
-        title: "商品",
-        component: ProductListPage,
-        permission: {
-            product: ["list"],
-        },
         nav: {
-            group: "business",
+            label: "商品管理",
             icon: PackageIcon,
             order: 20,
+        },
+        page: {
+            title: "商品管理",
+            path: "/product/list",
+            component: ProductListPage,
+        },
+        permission: {
+            product: ["list"],
         },
     },
     {
         id: "order.list",
-        path: "/order/list",
-        title: "订单",
-        component: OrderListPage,
-        permission: {
-            order: ["list"],
-        },
         nav: {
-            group: "business",
+            label: "订单管理",
             icon: ReceiptTextIcon,
             order: 30,
         },
+        page: {
+            title: "订单管理",
+            path: "/order/list",
+            component: OrderListPage,
+        },
+        permission: {
+            order: ["list"],
+        },
     },
-    ...queueDashboardRoutes,
+    ...queueDashboardEntries,
 ]);

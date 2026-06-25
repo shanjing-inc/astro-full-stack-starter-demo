@@ -9,11 +9,18 @@ import {
     DataTable,
     DateTimeCell,
     MoneyCell,
+    SELECT_EMPTY_VALUE,
     parsePageParam,
     parsePageSizeParam,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
     StatusBadge,
     TablePagination,
     useDashboardQuery,
+    useResettableFilterForm,
     type DataTableColumn,
 } from "@shanjing/astro-full-stack-starter/dashboard/client";
 
@@ -23,6 +30,14 @@ import type {
     ProductFilters,
 } from "@/graphql/generated/admin-types";
 import type React from "react";
+
+function getSelectValue(value: string) {
+    return value || SELECT_EMPTY_VALUE;
+}
+
+function getFilterValue(value: string) {
+    return value === SELECT_EMPTY_VALUE ? "" : value;
+}
 
 const LIST_ADMIN_PRODUCTS = gql`
     query listAdminProducts($where: ProductFilters, $limit: Int, $offset: Int) {
@@ -160,6 +175,7 @@ function buildProductFilters(
 export function ProductListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const searchParamsKey = searchParams.toString();
+    const { formKey, formRef, resetForm } = useResettableFilterForm(searchParamsKey);
     const filters = {
         shopId: searchParams.get("shopId") ?? "",
         sku: searchParams.get("sku") ?? "",
@@ -186,7 +202,7 @@ export function ProductListPage() {
         const formData = new FormData(event.currentTarget);
         const nextShopId = String(formData.get("shopId") ?? "").trim();
         const nextSku = String(formData.get("sku") ?? "").trim();
-        const nextStatus = String(formData.get("status") ?? "");
+        const nextStatus = getFilterValue(String(formData.get("status") ?? ""));
 
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
@@ -216,6 +232,8 @@ export function ProductListPage() {
     }
 
     function resetFilters() {
+        resetForm();
+
         setSearchParams((currentParams) => {
             const nextParams = new URLSearchParams(currentParams);
             nextParams.delete("shopId");
@@ -250,7 +268,7 @@ export function ProductListPage() {
         <div className="flex flex-col gap-6">
             <section className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                 <div>
-                    <h1 className="mt-2 text-3xl font-semibold tracking-normal">Product List</h1>
+                    <h1 className="mt-1 text-2xl font-semibold tracking-normal">Product List</h1>
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                         product 表字段、所属 shop 和订单数量。
                         {loading ? "" : `当前 ${products.length} 条记录。`}
@@ -263,34 +281,35 @@ export function ProductListPage() {
             </section>
 
             <form
-                key={searchParamsKey}
+                key={formKey}
+                ref={formRef}
                 className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3 rounded-lg border bg-background p-3 *:min-w-0"
                 onSubmit={applyFilters}
             >
                 <Input
-                    aria-label="Filter by shop id"
+                    aria-label="Shop ID"
                     inputMode="numeric"
                     name="shopId"
                     placeholder="Shop ID"
                     defaultValue={filters.shopId}
                 />
                 <Input
-                    aria-label="Filter by sku"
+                    aria-label="SKU"
                     name="sku"
                     placeholder="SKU contains"
                     defaultValue={filters.sku}
                 />
-                <select
-                    aria-label="Filter by status"
-                    className="h-8 w-full min-w-0 rounded-lg border border-input bg-background px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-                    name="status"
-                    defaultValue={filters.status}
-                >
-                    <option value="">All status</option>
-                    <option value="draft">draft</option>
-                    <option value="active">active</option>
-                    <option value="archived">archived</option>
-                </select>
+                <Select name="status" defaultValue={getSelectValue(filters.status)}>
+                    <SelectTrigger aria-label="Status">
+                        <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value={SELECT_EMPTY_VALUE}>All status</SelectItem>
+                        <SelectItem value="draft">draft</SelectItem>
+                        <SelectItem value="active">active</SelectItem>
+                        <SelectItem value="archived">archived</SelectItem>
+                    </SelectContent>
+                </Select>
                 <Button type="submit" className="w-full">
                     <FilterIcon />
                     Filter

@@ -47,6 +47,13 @@ export type CreateShopSetInput = {
     status?: InputMaybe<Scalars["String"]["input"]>;
 };
 
+export type CreateUserSetInput = {
+    email: Scalars["String"]["input"];
+    name: Scalars["String"]["input"];
+    password: Scalars["String"]["input"];
+    role?: InputMaybe<Scalars["String"]["input"]>;
+};
+
 export type DateTimeFilters = {
     eq?: InputMaybe<Scalars["DateTime"]["input"]>;
     gt?: InputMaybe<Scalars["DateTime"]["input"]>;
@@ -78,6 +85,7 @@ export type Mutation = {
     createOrder: OrderItem;
     createProduct: ProductItem;
     createShop: ShopItem;
+    createUser: Array<UserItem>;
     deleteOrder: Array<OrderItem>;
     deleteProduct: Array<ProductItem>;
     deleteShop: Array<ShopItem>;
@@ -99,6 +107,10 @@ export type MutationCreateProductArgs = {
 
 export type MutationCreateShopArgs = {
     set: CreateShopSetInput;
+};
+
+export type MutationCreateUserArgs = {
+    set: CreateUserSetInput;
 };
 
 export type MutationDeleteOrderArgs = {
@@ -680,4 +692,21 @@ export type ListAdminShopsQuery = {
             status?: string | null;
         }> | null;
     }> | null;
+};
+
+export type UpdateAdminShopMutationVariables = Exact<{
+    set: UpdateShopSetInput;
+    where: ShopFilters;
+}>;
+
+export type UpdateAdminShopMutation = {
+    __typename?: "Mutation";
+    updateShop: Array<{
+        __typename?: "ShopItem";
+        id?: string | null;
+        name?: string | null;
+        slug?: string | null;
+        status?: string | null;
+        updatedAt?: string | null;
+    }>;
 };

@@ -40,11 +40,32 @@ vi.mock("@shanjing/astro-full-stack-starter/dashboard/client", () => ({
     Popover: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     PopoverContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
     PopoverTrigger: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SELECT_EMPTY_VALUE: "__empty__",
+    Select: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SelectContent: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SelectItem: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+    SelectTrigger: ({ children }: { children: React.ReactNode }) => (
+        <button type="button">{children}</button>
+    ),
+    SelectValue: () => <span />,
     StatusBadge: ({ status }: { status: string }) => <span>{status}</span>,
     TablePagination: () => null,
     parsePageParam: (value: null | string) => Number.parseInt(value ?? "1", 10) || 1,
     parsePageSizeParam: (value: null | string) => Number.parseInt(value ?? "20", 10) || 20,
     useDashboardQuery: useDashboardQueryMock,
+    useResettableFilterForm: (searchParamsKey: string) => {
+        const formRef = React.useRef<HTMLFormElement>(null);
+        const [resetVersion, setResetVersion] = React.useState(0);
+
+        return {
+            formKey: `${searchParamsKey}:${resetVersion}`,
+            formRef,
+            resetForm: () => {
+                formRef.current?.reset();
+                setResetVersion((currentVersion) => currentVersion + 1);
+            },
+        };
+    },
 }));
 
 import { OrderListPage } from "@/dashboards/admin/pages/order-list";

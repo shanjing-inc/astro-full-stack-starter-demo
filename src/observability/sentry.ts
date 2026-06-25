@@ -48,7 +48,7 @@ function normalizeTags(tags: SentryReportParams["tags"] = {}) {
 }
 
 function getOriginalError(error: GraphQLError) {
-    return error.originalError ?? error.extensions?.originalError;
+    return error.originalError;
 }
 
 function shouldReport(error: unknown): boolean {
