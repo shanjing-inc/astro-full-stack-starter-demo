@@ -24,6 +24,13 @@ input CreateShopSetInput {
   status: String
 }
 
+input CreateUserSetInput {
+  email: String!
+  name: String!
+  password: String!
+  role: String
+}
+
 """
 DateTime instant serialized as a second-level UTC ISO string. Inputs must include Z or a UTC offset in UTC mode; legacy strings without timezone use TZ when TZ is non-UTC.
 """
@@ -61,6 +68,7 @@ type Mutation {
   createOrder(set: CreateOrderSetInput!): OrderItem!
   createProduct(set: CreateProductSetInput!): ProductItem!
   createShop(set: CreateShopSetInput!): ShopItem!
+  createUser(set: CreateUserSetInput!): [UserItem!]!
   deleteOrder(where: OrderFilters!): [OrderItem!]!
   deleteProduct(where: ProductFilters!): [ProductItem!]!
   deleteShop(where: ShopFilters!): [ShopItem!]!

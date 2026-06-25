@@ -27,6 +27,8 @@ import { registerShopTypes } from "@/graphql/types/shop";
 import { registerDashboardGraphQLSchema } from "@shanjing/astro-full-stack-starter/graphql/schemas/dashboard";
 import { createBullMqQueueDashboardBackend } from "@shanjing/astro-full-stack-starter/queue/dashboard";
 
+import type { GraphQLContext } from "@/graphql/context";
+
 const builder = createBuilder();
 
 const commonTypes = registerCommonTypes(builder);
@@ -36,6 +38,7 @@ const shopTypes = registerShopTypes(builder, commonTypes);
 
 registerDashboardGraphQLSchema(builder, {
     commonTypes,
+    createUser: (input, context: GraphQLContext) => context.createDashboardUser(input),
     getQueueDashboardBackend: () =>
         createBullMqQueueDashboardBackend({
             createQueueKernel,

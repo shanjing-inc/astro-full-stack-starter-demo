@@ -2,8 +2,8 @@ import DashboardApp, {
     type DashboardAppProps,
 } from "@shanjing/astro-full-stack-starter/dashboard/app";
 
-import { adminRoutes } from "@/dashboards/admin/routes";
+import { adminEntries } from "@/dashboards/admin/routes";
 
 export default function AdminDashboardApp(props: DashboardAppProps) {
-    return <DashboardApp {...props} routes={adminRoutes} />;
+    return <DashboardApp {...props} entries={adminEntries} />;
 }

@@ -28,15 +28,16 @@ import {
     websocketUpgradeRequestStorage,
 } from "@shanjing/astro-full-stack-starter/websocket/platforms/vite";
 import {
-    createDashboardRouteRegistry,
+    createDashboardEntryRegistry,
     createDashboardNavMain,
-    defineDashboardRoutes,
+    defineDashboardEntries,
     getDashboardRouteMeta,
     getDashboardRouteMetas,
+    isDashboardPageEntry,
     toDashboardRoutePath,
 } from "@shanjing/astro-full-stack-starter/dashboard/client";
-import { memberRoutes } from "@/dashboards/member/routes";
-import { adminRoutes } from "@/dashboards/admin/routes";
+import { memberEntries } from "@/dashboards/member/routes";
+import { adminEntries } from "@/dashboards/admin/routes";
 
 import type { IncomingMessage } from "node:http";
 import type { Socket } from "node:net";
@@ -1008,39 +1009,45 @@ describe("starter package Astro integration", () => {
 
         expect(auth).toBeDefined();
 
-        const routes = defineDashboardRoutes([
+        const entries = defineDashboardEntries([
             {
-                component: "ShopListPage",
                 id: "shop.list",
-                path: "/shop/list",
-                title: "店铺",
+                page: {
+                    title: "店铺管理",
+                    path: "/shop/list",
+                    component: "ShopListPage",
+                },
             },
         ]);
-        const registry = createDashboardRouteRegistry(
+        const registry = createDashboardEntryRegistry(
             [
                 {
-                    component: "DashboardPage",
                     id: "dashboard",
-                    path: "/",
-                    title: "Dashboard",
+                    page: {
+                        title: "Dashboard",
+                        path: "/",
+                        component: "DashboardPage",
+                    },
                 },
             ],
-            routes
+            entries
         );
 
-        expect(registry.routes.map((route) => route.id)).toEqual(["dashboard", "shop.list"]);
+        expect(registry.entries.map((entry) => entry.id)).toEqual(["dashboard", "shop.list"]);
+        expect(registry.pages.map((entry) => entry.page.path)).toEqual(["/", "/shop/list"]);
     });
 
-    it("registers demo business pages as project-owned dashboard routes", () => {
+    it("registers demo business pages as project-owned dashboard entries", () => {
         const businessRouteIds = ["project.dashboard", "shop.list", "product.list", "order.list"];
 
         expect(
-            adminRoutes
-                .filter((route) => businessRouteIds.includes(route.id))
-                .map((route) => ({
-                    id: route.id,
-                    path: route.path,
-                    permission: route.permission,
+            adminEntries
+                .filter(isDashboardPageEntry)
+                .filter((entry) => businessRouteIds.includes(entry.id))
+                .map((entry) => ({
+                    id: entry.id,
+                    path: entry.page.path,
+                    permission: entry.permission,
                 }))
         ).toEqual([
             {
@@ -1074,9 +1081,10 @@ describe("starter package Astro integration", () => {
         ]);
     });
 
-    it("registers queue routes only in the admin dashboard", () => {
-        expect(adminRoutes.map((route) => route.id)).toEqual(
+    it("registers queue entries only in the admin dashboard", () => {
+        expect(adminEntries.map((entry) => entry.id)).toEqual(
             expect.arrayContaining([
+                "queues",
                 "queue.dashboard",
                 "queue.schedules",
                 "queue.jobs.failed",
@@ -1084,7 +1092,7 @@ describe("starter package Astro integration", () => {
                 "queue.jobs.detail",
             ])
         );
-        expect(adminRoutes.map((route) => route.path)).toEqual(
+        expect(adminEntries.filter(isDashboardPageEntry).map((entry) => entry.page.path)).toEqual(
             expect.arrayContaining([
                 "/queues",
                 "/queues/schedules",
@@ -1093,25 +1101,25 @@ describe("starter package Astro integration", () => {
                 "/queues/jobs/:status/:recordId",
             ])
         );
-        expect(memberRoutes.map((route) => route.id)).not.toContain("queue.dashboard");
+        expect(memberEntries.map((entry) => entry.id)).not.toContain("queue.dashboard");
     });
 
-    it("registers user routes only in the admin dashboard", () => {
-        expect(adminRoutes.map((route) => route.id)).toEqual(
-            expect.arrayContaining(["user.list", "user.admin"])
+    it("registers user entries only in the admin dashboard", () => {
+        expect(adminEntries.map((entry) => entry.id)).toEqual(
+            expect.arrayContaining(["users", "user.list", "user.admin"])
         );
-        expect(adminRoutes.map((route) => route.path)).toEqual(
+        expect(adminEntries.filter(isDashboardPageEntry).map((entry) => entry.page.path)).toEqual(
             expect.arrayContaining(["/user/list", "/user/admin"])
         );
-        expect(memberRoutes.map((route) => route.id)).not.toContain("user.list");
+        expect(memberEntries.map((entry) => entry.id)).not.toContain("user.list");
     });
 
     it("registers read-only business pages in the member dashboard", () => {
         expect(
-            memberRoutes.map((route) => ({
-                id: route.id,
-                path: route.path,
-                permission: route.permission,
+            memberEntries.filter(isDashboardPageEntry).map((entry) => ({
+                id: entry.id,
+                path: entry.page.path,
+                permission: entry.permission,
             }))
         ).toEqual(
             expect.arrayContaining([
@@ -1140,66 +1148,114 @@ describe("starter package Astro integration", () => {
         );
     });
 
-    it("lets project-owned routes replace package-owned routes by path", () => {
-        const registry = createDashboardRouteRegistry(
+    it("lets project-owned page entries replace package-owned page entries by path", () => {
+        const registry = createDashboardEntryRegistry(
             [
                 {
                     id: "dashboard",
-                    path: "/",
-                    title: "Dashboard",
+                    page: {
+                        title: "Dashboard",
+                        path: "/",
+                        component: "DashboardPage",
+                    },
                 },
                 {
                     id: "queue.dashboard",
-                    path: "/queues",
-                    title: "Queues",
+                    page: {
+                        title: "Queues",
+                        path: "/queues",
+                        component: "QueuePage",
+                    },
                 },
             ],
             [
                 {
-                    component: "ProjectDashboardPage",
                     id: "project.dashboard",
-                    path: "/",
-                    title: "Project Dashboard",
+                    page: {
+                        title: "Project Dashboard",
+                        path: "/",
+                        component: "ProjectDashboardPage",
+                    },
                 },
             ]
         );
 
-        expect(registry.routes.find((route) => route.path === "/")?.id).toBe("project.dashboard");
-        expect(registry.routes.map((route) => route.id)).not.toContain("dashboard");
+        expect(registry.pages.find((entry) => entry.page.path === "/")?.id).toBe(
+            "project.dashboard"
+        );
+        expect(registry.entries.map((entry) => entry.id)).not.toContain("dashboard");
     });
 
-    it("derives demo business navigation from project-owned dashboard routes", () => {
+    it("lets project-owned entries reference package-owned nav parents", () => {
+        const projectEntries = defineDashboardEntries([
+            {
+                id: "project.sales.report",
+                nav: {
+                    label: "销售报表",
+                    parent: "reports",
+                },
+                page: {
+                    title: "销售报表",
+                    path: "/reports/sales",
+                    component: "SalesReportPage",
+                },
+            },
+        ]);
+
+        const registry = createDashboardEntryRegistry(
+            [
+                {
+                    id: "reports",
+                    nav: {
+                        label: "报表中心",
+                        order: 20,
+                    },
+                },
+            ],
+            projectEntries
+        );
+
+        expect(registry.entries.map((entry) => entry.id)).toEqual([
+            "reports",
+            "project.sales.report",
+        ]);
+        expect(registry.pages.map((entry) => entry.page.path)).toEqual(["/reports/sales"]);
+    });
+
+    it("derives demo business navigation from project-owned dashboard entries", () => {
         expect(
-            createDashboardNavMain("/admin", adminRoutes).map((item) => ({
+            createDashboardNavMain("/admin", adminEntries).map((item) => ({
                 title: item.title,
                 url: item.url,
+                items: item.items.map((subItem) => subItem.title),
             }))
         ).toEqual(
             expect.arrayContaining([
-                {
+                expect.objectContaining({
                     title: "Dashboard",
                     url: "/admin",
-                },
-                {
-                    title: "店铺",
+                }),
+                expect.objectContaining({
+                    title: "店铺管理",
                     url: "/admin/shop/list",
-                },
-                {
-                    title: "商品",
+                }),
+                expect.objectContaining({
+                    title: "商品管理",
                     url: "/admin/product/list",
-                },
-                {
-                    title: "订单",
+                }),
+                expect.objectContaining({
+                    title: "订单管理",
                     url: "/admin/order/list",
-                },
-                {
-                    title: "用户",
-                    url: "/admin/user/list",
-                },
+                }),
+                expect.objectContaining({
+                    title: "用户管理",
+                    url: null,
+                    items: expect.arrayContaining(["用户列表", "管理员"]),
+                }),
             ])
         );
         expect(
-            getDashboardRouteMetas("/admin", adminRoutes).map((routeMeta) => routeMeta.url)
+            getDashboardRouteMetas("/admin", adminEntries).map((routeMeta) => routeMeta.url)
         ).toEqual(
             expect.arrayContaining([
                 "/admin/shop/list",
@@ -1209,28 +1265,28 @@ describe("starter package Astro integration", () => {
             ])
         );
         expect(
-            createDashboardNavMain("/console", adminRoutes).map((item) => ({
+            createDashboardNavMain("/console", adminEntries).map((item) => ({
                 title: item.title,
                 url: item.url,
             }))
         ).toEqual(
             expect.arrayContaining([
                 {
-                    title: "店铺",
+                    title: "店铺管理",
                     url: "/console/shop/list",
                 },
                 {
-                    title: "商品",
+                    title: "商品管理",
                     url: "/console/product/list",
                 },
                 {
-                    title: "订单",
+                    title: "订单管理",
                     url: "/console/order/list",
                 },
             ])
         );
         expect(
-            getDashboardRouteMetas("/console", adminRoutes).map((routeMeta) => routeMeta.url)
+            getDashboardRouteMetas("/console", adminEntries).map((routeMeta) => routeMeta.url)
         ).toEqual(
             expect.arrayContaining([
                 "/console/shop/list",
@@ -1241,77 +1297,128 @@ describe("starter package Astro integration", () => {
         expect(toDashboardRoutePath("/console/shop/list", "/console")).toBe("shop/list");
     });
 
-    it("rejects duplicate dashboard project routes", () => {
+    it("rejects duplicate dashboard project entries", () => {
         expect(() =>
-            defineDashboardRoutes([
+            defineDashboardEntries([
                 {
-                    component: "QueuePage",
                     id: "queue",
-                    path: "/queues",
-                    title: "Queues",
+                    page: {
+                        title: "Queues",
+                        path: "/queues",
+                        component: "QueuePage",
+                    },
                 },
                 {
-                    component: "OtherQueuePage",
                     id: "queue",
-                    path: "/queues/other",
-                    title: "Other Queues",
+                    page: {
+                        title: "Other Queues",
+                        path: "/queues/other",
+                        component: "OtherQueuePage",
+                    },
                 },
             ])
-        ).toThrow('Dashboard route id "queue" is duplicated.');
+        ).toThrow('Dashboard entry id "queue" is duplicated.');
     });
 
-    it("rejects duplicate browser-side dashboard project routes", () => {
+    it("rejects duplicate browser-side dashboard page paths", () => {
         expect(() =>
-            defineDashboardRoutes([
+            defineDashboardEntries([
                 {
-                    component: "QueuePage",
                     id: "queue",
-                    path: "/queues",
-                    title: "Queues",
+                    page: {
+                        title: "Queues",
+                        path: "/queues",
+                        component: "QueuePage",
+                    },
                 },
                 {
-                    component: "OtherQueuePage",
-                    id: "queue",
-                    path: "/queues/other",
-                    title: "Other Queues",
+                    id: "other.queue",
+                    page: {
+                        title: "Other Queues",
+                        path: "/queues",
+                        component: "OtherQueuePage",
+                    },
                 },
             ])
-        ).toThrow('Dashboard route id "queue" is duplicated.');
+        ).toThrow('Dashboard page path "/queues" is duplicated.');
     });
 
-    it("derives navigation from supplied package-owned dashboard routes", () => {
-        const builtinRoutes = [
+    it("rejects missing dashboard nav parents after registry merge", () => {
+        expect(() =>
+            createDashboardEntryRegistry(
+                [],
+                [
+                    {
+                        id: "project.sales.report",
+                        nav: {
+                            label: "销售报表",
+                            parent: "reports",
+                        },
+                        page: {
+                            title: "销售报表",
+                            path: "/reports/sales",
+                            component: "SalesReportPage",
+                        },
+                    },
+                ]
+            )
+        ).toThrow(
+            'Dashboard entry "project.sales.report" references missing nav parent "reports".'
+        );
+    });
+
+    it("derives navigation from supplied package-owned dashboard entries", () => {
+        const builtinEntries = [
+            {
+                id: "queues",
+                nav: {
+                    label: "队列",
+                    order: 99,
+                },
+            },
             {
                 id: "queue.dashboard",
-                path: "/queues",
-                title: "控制台",
                 nav: {
-                    order: 99,
-                    title: "队列",
+                    label: "控制台",
+                    order: 10,
+                    parent: "queues",
+                },
+                page: {
+                    title: "控制台",
+                    path: "/queues",
+                    component: "QueuePage",
                 },
             },
             {
                 id: "queue.schedules",
-                path: "/queues/schedules",
-                title: "队列计划",
                 nav: {
+                    label: "队列计划",
                     order: 21,
-                    parentId: "queue.dashboard",
+                    parent: "queues",
+                },
+                page: {
+                    title: "队列计划",
+                    path: "/queues/schedules",
+                    component: "QueuePage",
                 },
             },
             {
                 id: "queue.jobs.failed",
-                path: "/queues/jobs/failed",
-                title: "失败任务",
                 nav: {
+                    label: "失败任务",
                     order: 25,
-                    parentId: "queue.dashboard",
+                    parent: "queues",
+                },
+                page: {
+                    title: "失败任务",
+                    path: "/queues/jobs/failed",
+                    component: "QueuePage",
                 },
             },
         ];
 
         expect(
-            getDashboardRouteMetas("/admin", [], builtinRoutes).map((route) => route.url)
+            getDashboardRouteMetas("/admin", [], builtinEntries).map((route) => route.url)
         ).toEqual(
             expect.arrayContaining([
                 "/admin/queues",
@@ -1320,18 +1427,23 @@ describe("starter package Astro integration", () => {
             ])
         );
         expect(
-            createDashboardNavMain("/admin", [], builtinRoutes).find(
-                (route) => route.url === "/admin/queues"
+            createDashboardNavMain("/admin", [], builtinEntries).find(
+                (route) => route.title === "队列"
+            )?.url
+        ).toBeNull();
+        expect(
+            createDashboardNavMain("/admin", [], builtinEntries).find(
+                (route) => route.title === "队列"
             )?.title
         ).toBe("队列");
         expect(
-            createDashboardNavMain("/admin", [], builtinRoutes)
-                .find((route) => route.url === "/admin/queues")
+            createDashboardNavMain("/admin", [], builtinEntries)
+                .find((route) => route.title === "队列")
                 ?.items.map((item) => item.title)
         ).toEqual(expect.arrayContaining(["控制台", "队列计划", "失败任务"]));
     });
 
-    it("uses the longest route prefix for dynamic admin child pages", () => {
+    it("matches hidden dynamic admin pages by route pattern", () => {
         expect(
             getDashboardRouteMeta(
                 "/admin/queues/jobs/failed/record-1",
@@ -1339,28 +1451,52 @@ describe("starter package Astro integration", () => {
                 [],
                 [
                     {
-                        id: "queue.dashboard",
-                        path: "/queues",
-                        title: "队列",
+                        id: "queues",
                         nav: {
+                            label: "队列",
                             order: 1,
                         },
                     },
                     {
-                        id: "queue.jobs.failed",
-                        path: "/queues/jobs/failed",
-                        title: "失败任务",
+                        id: "queue.dashboard",
                         nav: {
+                            label: "控制台",
+                            order: 1,
+                            parent: "queues",
+                        },
+                        page: {
+                            title: "控制台",
+                            path: "/queues",
+                            component: "QueuePage",
+                        },
+                    },
+                    {
+                        id: "queue.jobs.failed",
+                        nav: {
+                            label: "失败任务",
                             order: 2,
-                            parentId: "queue.dashboard",
+                            parent: "queues",
+                        },
+                        page: {
+                            title: "失败任务",
+                            path: "/queues/jobs/failed",
+                            component: "QueuePage",
+                        },
+                    },
+                    {
+                        id: "queue.jobs.detail",
+                        page: {
+                            title: "任务详情",
+                            path: "/queues/jobs/:status/:recordId",
+                            component: "QueuePage",
                         },
                     },
                 ]
             )
         ).toEqual({
-            parentTitle: "队列",
-            title: "失败任务",
-            url: "/admin/queues/jobs/failed",
+            parentTitle: "Dashboard",
+            title: "任务详情",
+            url: "/admin/queues/jobs/:status/:recordId",
         });
     });
 

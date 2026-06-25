@@ -25,10 +25,9 @@ import {
 describe("database schemas", () => {
     const zonedDateTimeUsageMessage =
         "MySQL schema time fields must use zonedDateTime from @shanjing/astro-full-stack-starter/db/mysql/schemas. Replace datetime from drizzle-orm/mysql-core.";
-    const mysqlSchemaSourcePaths = [
-        path.resolve("src/db/schemas.ts"),
-        path.resolve("../../packages/astro-full-stack-starter/src/db/mysql/schemas.ts"),
-    ];
+    const zonedTimestampUsageMessage =
+        "MySQL schema timestamp fields must use zonedTimestamp from @shanjing/astro-full-stack-starter/db/mysql/schemas. Replace timestamp from drizzle-orm/mysql-core.";
+    const demoMysqlSchemaSourcePaths = [path.resolve("src/db/schemas.ts")];
     const expectedDatetimeSnapshotColumns = [
         ["account", "access_token_expires_at"],
         ["account", "refresh_token_expires_at"],
@@ -76,7 +75,7 @@ describe("database schemas", () => {
         return `${sourceFile.fileName}:${location.line + 1}:${location.character + 1}`;
     }
 
-    function collectMysqlCoreDateTimeUsages(sourcePath: string) {
+    function collectMysqlCoreColumnUsages(sourcePath: string, columnBuilderName: string) {
         const sourceFile = ts.createSourceFile(
             sourcePath,
             readFileSync(sourcePath, "utf8"),
@@ -84,7 +83,7 @@ describe("database schemas", () => {
             true,
             ts.ScriptKind.TS
         );
-        const dateTimeImportNames = new Map<string, ts.Node>();
+        const columnImportNames = new Map<string, ts.Node>();
         const mysqlCoreNamespaceNames = new Set<string>();
         const usageMessages: string[] = [];
 
@@ -98,8 +97,10 @@ describe("database schemas", () => {
 
                 if (namedBindings && ts.isNamedImports(namedBindings)) {
                     for (const element of namedBindings.elements) {
-                        if ((element.propertyName?.text ?? element.name.text) === "datetime") {
-                            dateTimeImportNames.set(element.name.text, element);
+                        if (
+                            (element.propertyName?.text ?? element.name.text) === columnBuilderName
+                        ) {
+                            columnImportNames.set(element.name.text, element);
                         }
                     }
                 }
@@ -112,30 +113,32 @@ describe("database schemas", () => {
             ts.forEachChild(node, collectImports);
         });
 
-        for (const importNode of dateTimeImportNames.values()) {
-            usageMessages.push(`${formatSourceLocation(sourceFile, importNode)} import datetime`);
+        for (const importNode of columnImportNames.values()) {
+            usageMessages.push(
+                `${formatSourceLocation(sourceFile, importNode)} import ${columnBuilderName}`
+            );
         }
 
         ts.forEachChild(sourceFile, function collectCalls(node) {
             if (
                 ts.isCallExpression(node) &&
                 ts.isIdentifier(node.expression) &&
-                dateTimeImportNames.has(node.expression.text)
+                columnImportNames.has(node.expression.text)
             ) {
                 usageMessages.push(
-                    `${formatSourceLocation(sourceFile, node.expression)} call datetime`
+                    `${formatSourceLocation(sourceFile, node.expression)} call ${columnBuilderName}`
                 );
             }
 
             if (
                 ts.isCallExpression(node) &&
                 ts.isPropertyAccessExpression(node.expression) &&
-                node.expression.name.text === "datetime" &&
+                node.expression.name.text === columnBuilderName &&
                 ts.isIdentifier(node.expression.expression) &&
                 mysqlCoreNamespaceNames.has(node.expression.expression.text)
             ) {
                 usageMessages.push(
-                    `${formatSourceLocation(sourceFile, node.expression)} call namespace datetime`
+                    `${formatSourceLocation(sourceFile, node.expression)} call namespace ${columnBuilderName}`
                 );
             }
 
@@ -213,11 +216,19 @@ describe("database schemas", () => {
     });
 
     it("uses zonedDateTime for MySQL schema time fields", () => {
-        const disallowedUsages = mysqlSchemaSourcePaths.flatMap((sourcePath) =>
-            collectMysqlCoreDateTimeUsages(sourcePath)
+        const disallowedUsages = demoMysqlSchemaSourcePaths.flatMap((sourcePath) =>
+            collectMysqlCoreColumnUsages(sourcePath, "datetime")
         );
 
         expect(disallowedUsages, zonedDateTimeUsageMessage).toEqual([]);
+    });
+
+    it("uses zonedTimestamp for MySQL schema timestamp fields", () => {
+        const disallowedUsages = demoMysqlSchemaSourcePaths.flatMap((sourcePath) =>
+            collectMysqlCoreColumnUsages(sourcePath, "timestamp")
+        );
+
+        expect(disallowedUsages, zonedTimestampUsageMessage).toEqual([]);
     });
 
     it("adds a migration that converts timestamp columns to datetime in UTC", () => {

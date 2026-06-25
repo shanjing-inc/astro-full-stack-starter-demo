@@ -61,7 +61,7 @@ function mergeReportParams(error: unknown, params: SentryReportParams = {}): Sen
 }
 
 function getOriginalError(error: GraphQLError) {
-    return error.originalError ?? error.extensions?.originalError;
+    return error.originalError;
 }
 
 export function shouldReport(error: unknown): boolean {
