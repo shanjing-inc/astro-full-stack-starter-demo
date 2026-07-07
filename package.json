@@ -47,7 +47,7 @@
         "@pothos/plugin-drizzle": "^0.17.1",
         "@sentry/astro": "^10.51.0",
         "@sentry/cloudflare": "^10.51.0",
-        "@shanjing/astro-full-stack-starter": "0.9.3",
+        "@shanjing/astro-full-stack-starter": "0.9.4",
         "better-auth": "^1.6.9",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
