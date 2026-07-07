@@ -34,6 +34,7 @@ pnpm --filter deno-mysql-demo dev
 pnpm --filter deno-mysql-demo test
 pnpm --filter deno-mysql-demo check
 pnpm --filter deno-mysql-demo build
+pnpm --filter deno-mysql-demo db:migration:bundle
 ```
 
 The workspace-level quality gate also includes this demo:
@@ -78,3 +79,63 @@ Use local-only values for development secrets.
 ## Deployment Notes
 
 Use this demo when you want to validate the Deno runtime path with a MySQL-backed application. Keep runtime-specific configuration inside this demo so the shared starter package stays reusable across deployment targets.
+
+### Database Migration Bundle
+
+For standalone demo releases, CI can generate a database migration bundle:
+
+```bash
+pnpm db:migration:bundle
+```
+
+The output lives in `dist/migration/` and contains:
+
+- `drizzle/**/migration.sql`
+- `migrate.mjs`
+- `migrate.sh`
+- `deno.lock`
+- `README.md`
+
+Run a preflight check on the customer server or deployment host:
+
+```bash
+DATABASE_URL="mysql://user:password@host:3306/database" ./dist/migration/migrate.sh --dry-run
+```
+
+`--dry-run` connects to MySQL, reads `__drizzle_migrations`, prints the target database summary, pending migrations, and statement counts, then skips SQL execution.
+
+Run pending migrations after the preflight check:
+
+```bash
+DATABASE_URL="mysql://user:password@host:3306/database" ./dist/migration/migrate.sh
+```
+
+The runner executes SQL in `drizzle/` folder-name order and writes records compatible with Drizzle's MySQL `__drizzle_migrations` table. Logs include host, port, database, and a masked username.
+
+### Release Order
+
+Use expand / deploy / contract:
+
+1. Generate and ship `dist/migration/`.
+2. Run `./migrate.sh --dry-run` before updating the application Docker image.
+3. Run `./migrate.sh` after the preflight check passes, carrying compatible schema changes.
+4. Roll out the application Docker image across all servers.
+5. Handle contract changes in a later cleanup release after the rollback window closes.
+
+Pre-update migrations carry compatible changes:
+
+- New tables.
+- New nullable columns.
+- New columns with defaults.
+- New indexes.
+- Existing columns, tables, and constraint semantics remain available.
+
+Cleanup releases carry contract changes:
+
+- Dropping columns or tables.
+- Removing old columns after renames.
+- Tightening nullable columns.
+- Changing field semantics.
+- Removing old constraint semantics.
+
+During a multi-server rolling update, old and new application images share the same compatible schema. Image rollback relies on that compatibility rule: while the database remains in the expand state, the application image can roll back to the previous version. MySQL DDL can commit implicitly, so failed migration recovery depends on pre-release backups, migration splitting, and operator review.

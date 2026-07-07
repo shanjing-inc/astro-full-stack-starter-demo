@@ -17,6 +17,7 @@
         "start": "pnpm queue:sync && astro dev",
         "db:generate": "drizzle-kit generate",
         "db:migrate": "drizzle-kit migrate",
+        "db:migration:bundle": "node ./scripts/create-migration-bundle.mjs",
         "db:push": "drizzle-kit push",
         "db:studio": "drizzle-kit studio",
         "build": "pnpm build:release",

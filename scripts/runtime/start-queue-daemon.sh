@@ -26,11 +26,9 @@ fi
 
 mkdir -p "$PM2_HOME"
 
-pm2 delete "$PM2_CONFIG" >/dev/null 2>&1 || true
-pm2 kill >/dev/null 2>&1 || true
-
 if [ -n "${QUEUE_APPS:-}" ]; then
-    exec pm2 start "$PM2_CONFIG" --env "$PM2_ENV" --only "$QUEUE_APPS"
+    pm2 startOrReload "$PM2_CONFIG" --env "$PM2_ENV" --only "$QUEUE_APPS"
+    exit 0
 fi
 
-exec pm2 start "$PM2_CONFIG" --env "$PM2_ENV"
+pm2 startOrReload "$PM2_CONFIG" --env "$PM2_ENV"

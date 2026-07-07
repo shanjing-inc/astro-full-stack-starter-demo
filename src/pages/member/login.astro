@@ -5,13 +5,17 @@ import { LoginForm } from "@/components/admin/login-form";
 import { databaseProvider } from "@/db/client";
 import BaseLayout from "@/layouts/base-layout.astro";
 import { auth } from "@/lib/auth";
+import { resolveDashboardReturnTo } from "@/lib/dashboard-return-to";
 import { appendAuthCookies } from "@shanjing/astro-full-stack-starter/dashboard/auth";
 
+const dashboardPath = "/member";
+const loginPath = `${dashboardPath}/login`;
 const db = databaseProvider.getDb();
 const user = databaseProvider.schema.user;
 
 let defaultEmail = "";
 let errorMessage = "";
+let returnTo = resolveDashboardReturnTo(Astro.url.searchParams.get("returnTo"), dashboardPath);
 
 const currentSession = await auth.api.getSession({
     headers: Astro.request.headers,
@@ -27,7 +31,7 @@ if (
     return new Response(null, {
         status: 303,
         headers: {
-            location: "/member",
+            location: returnTo,
         },
     });
 }
@@ -38,6 +42,7 @@ if (Astro.request.method === "POST") {
     const password = String(formData.get("password") ?? "");
 
     defaultEmail = email;
+    returnTo = resolveDashboardReturnTo(String(formData.get("returnTo") ?? ""), dashboardPath);
 
     if (!email || !password) {
         errorMessage = "请输入邮箱和密码。";
@@ -68,7 +73,7 @@ if (Astro.request.method === "POST") {
                     const headers = new Headers();
 
                     appendAuthCookies(authResponse.headers, headers);
-                    headers.set("location", "/member");
+                    headers.set("location", returnTo);
 
                     return new Response(null, {
                         status: 303,
@@ -86,11 +91,12 @@ if (Astro.request.method === "POST") {
 <BaseLayout title="Member Login">
     <section class="flex min-h-[calc(100vh-5rem)] items-center justify-center">
         <LoginForm
-            action="/member/login"
+            action={loginPath}
             className="w-full max-w-5xl"
             defaultEmail={defaultEmail}
             description="使用会员账号登录"
             errorMessage={errorMessage}
+            returnTo={returnTo}
             title="Member"
         />
     </section>

@@ -11,6 +11,7 @@ type LoginFormProps = React.ComponentProps<"div"> & {
     defaultEmail?: string;
     description?: string;
     errorMessage?: string;
+    returnTo?: string;
     title?: string;
 };
 
@@ -20,6 +21,7 @@ export function LoginForm({
     defaultEmail = "",
     description = "使用管理员账号登录",
     errorMessage = "",
+    returnTo = "",
     title = "Admin",
     ...props
 }: LoginFormProps) {
@@ -28,6 +30,7 @@ export function LoginForm({
             <Card className="overflow-hidden p-0">
                 <CardContent className="grid p-0 md:grid-cols-2">
                     <form method="post" action={action} className="p-6 md:p-8">
+                        {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
                         <FieldGroup>
                             <div className="flex flex-col items-center gap-2 text-center">
                                 <h1 className="text-2xl font-bold">{title}</h1>

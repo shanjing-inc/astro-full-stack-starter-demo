@@ -110,10 +110,13 @@ describe("starter package Astro integration", () => {
         expect(memberSchema).not.toContain("registerUpdateProductMutation");
         expect(existsSync(installPath)).toBe(true);
         expect(existsSync(loginPath)).toBe(true);
-        expect(readFileSync(memberLoginPath, "utf8")).toContain('action="/member/login"');
         expect(readFileSync(memberLoginPath, "utf8")).toContain(
-            'headers.set("location", "/member")'
+            "const loginPath = `${dashboardPath}/login`;"
         );
+        expect(readFileSync(memberLoginPath, "utf8")).toContain(
+            'headers.set("location", returnTo)'
+        );
+        expect(readFileSync(memberLoginPath, "utf8")).toContain("returnTo={returnTo}");
         expect(existsSync(logoutPath)).toBe(true);
     });
 

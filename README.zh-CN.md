@@ -35,6 +35,7 @@ pnpm --filter deno-mysql-demo test
 pnpm --filter deno-mysql-demo check
 pnpm --filter deno-mysql-demo check:pre-commit
 pnpm --filter deno-mysql-demo build
+pnpm --filter deno-mysql-demo db:migration:bundle
 ```
 
 根级质量检查也会包含这个 demo：
@@ -85,3 +86,63 @@ pnpm --filter deno-mysql-demo test
 ## 部署说明
 
 当你需要验证 Deno 运行时和 MySQL 后端组合时，可以使用这个 demo。运行时专属配置应保留在这个 demo 内，让共享 starter package 保持可复用。
+
+### 数据库迁移包
+
+独立 demo 仓库上线时，CI 可以生成数据库迁移包：
+
+```bash
+pnpm db:migration:bundle
+```
+
+产物位于 `dist/migration/`，包含：
+
+- `drizzle/**/migration.sql`
+- `migrate.mjs`
+- `migrate.sh`
+- `deno.lock`
+- `README.md`
+
+客户服务器或部署机执行预检查：
+
+```bash
+DATABASE_URL="mysql://user:password@host:3306/database" ./dist/migration/migrate.sh --dry-run
+```
+
+`--dry-run` 会连接数据库，读取 `__drizzle_migrations`，打印目标库摘要、pending migration 列表和每个 migration 的 statement 数量，并跳过 SQL 执行。
+
+确认后执行迁移：
+
+```bash
+DATABASE_URL="mysql://user:password@host:3306/database" ./dist/migration/migrate.sh
+```
+
+runner 会按 `drizzle/` 目录名升序执行 SQL，并写入 Drizzle MySQL migrator 兼容的 `__drizzle_migrations` 表。日志只输出 host、port、database 和遮蔽后的 username。
+
+### 上线顺序
+
+推荐使用 expand / deploy / contract：
+
+1. 先生成并交付 `dist/migration/`。
+2. 在业务 Docker 更新前运行 `./migrate.sh --dry-run`。
+3. 通过后运行 `./migrate.sh`，只执行兼容 schema 变更。
+4. 滚动更新多台服务器上的业务 Docker。
+5. 等旧版本回退窗口结束后，在后续清理发布中处理 contract 类变更。
+
+更新前迁移只承载兼容变更：
+
+- 新增表。
+- 新增 nullable 字段。
+- 新增带默认值字段。
+- 新增索引。
+- 保留旧字段、旧表和旧约束语义。
+
+清理发布承载 contract 类变更：
+
+- 删除字段或表。
+- 字段重命名后的旧字段清理。
+- 收紧 nullable。
+- 改变字段业务含义。
+- 删除旧约束语义。
+
+多台服务器滚动更新期间，旧版和新版业务镜像共用同一个兼容 schema。镜像回退依赖这条兼容规则：数据库保持 expand 状态时，业务镜像可以回退到旧版本。MySQL DDL 存在隐式提交语义，迁移失败后的恢复依赖发布前备份、迁移拆分和人工确认。
