@@ -7,6 +7,8 @@ APP_ROOT=$(CDPATH= cd -- "$DIST_DIR/../.." && pwd)
 DENO_BIN="${DENO_BIN:-deno}"
 PORT="${PORT:-8000}"
 SERVER_ENTRY="$DIST_DIR/server/serve.mjs"
+QUEUE_PM2_HOME="${QUEUE_PM2_HOME:-/app/.pm2-queue}"
+QUEUE_DAEMON_LOG="${QUEUE_DAEMON_LOG:-$QUEUE_PM2_HOME/start-queue-daemon.log}"
 
 find_env_file() {
     for candidate in \
@@ -26,7 +28,8 @@ find_env_file() {
 start_queue_daemon_if_enabled() {
     case "${QUEUE:-0}" in
         1|true|TRUE|yes|YES|on|ON)
-            "$SCRIPT_DIR/start-queue-daemon.sh"
+            mkdir -p "$QUEUE_PM2_HOME"
+            "$SCRIPT_DIR/start-queue-daemon.sh" >>"$QUEUE_DAEMON_LOG" 2>&1 &
             ;;
     esac
 }
