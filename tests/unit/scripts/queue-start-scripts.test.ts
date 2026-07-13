@@ -20,7 +20,7 @@ describe("queue startup scripts", () => {
         expect(source).not.toContain("exec pm2 start");
     });
 
-    it("starts the queue daemon in the background before web startup", () => {
+    it("starts the queue daemon with a bounded timeout before web startup", () => {
         const source = readFileSync(path.join(projectRoot, "scripts/runtime/start-web.sh"), "utf8");
 
         expect(source).toContain('QUEUE_PM2_HOME="${QUEUE_PM2_HOME:-/app/.pm2-queue}"');
@@ -28,8 +28,23 @@ describe("queue startup scripts", () => {
             'QUEUE_DAEMON_LOG="${QUEUE_DAEMON_LOG:-$QUEUE_PM2_HOME/start-queue-daemon.log}"'
         );
         expect(source).toContain(
-            '"$SCRIPT_DIR/start-queue-daemon.sh" >>"$QUEUE_DAEMON_LOG" 2>&1 &'
+            'QUEUE_DAEMON_TIMEOUT_SECONDS="${QUEUE_DAEMON_TIMEOUT_SECONDS:-30}"'
+        );
+        expect(source).toContain(
+            'timeout "$QUEUE_DAEMON_TIMEOUT_SECONDS" "$SCRIPT_DIR/start-queue-daemon.sh"'
         );
         expect(source).toContain('exec "$@" "$SERVER_ENTRY"');
+    });
+
+    it("validates PM2 config before startOrReload in queue daemon", () => {
+        const source = readFileSync(
+            path.join(projectRoot, "scripts/runtime/start-queue-daemon.sh"),
+            "utf8"
+        );
+
+        expect(source).toContain("missing PM2 config");
+        expect(source).toContain("pm2 not found in PATH");
+        expect(source).toContain("require(process.argv[1])");
+        expect(source).toContain("pm2 startOrReload");
     });
 });
