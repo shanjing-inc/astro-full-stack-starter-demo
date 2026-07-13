@@ -51,7 +51,10 @@ function parseWorkerStartupOptions(argv) {
 
     if (invalidQueueNames.length > 0) {
         throw new Error(
-            `Unsupported queues: ${invalidQueueNames.join(", ")}.\n\n${getWorkerUsageMessage()}`
+            `Unsupported queues: ${invalidQueueNames.join(", ")}. ` +
+                "Custom queue names require project configureQueueRuntime(...) " +
+                "(import your queues config) before parseQueueNames.\n\n" +
+                `${getWorkerUsageMessage()}`
         );
     }
 

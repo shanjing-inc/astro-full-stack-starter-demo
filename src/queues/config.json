@@ -3,13 +3,13 @@
         "critical": {
             "description": "高优先级任务队列",
             "concurrency": 2,
-            "instances": 2,
+            "instances": 1,
             "maxMemory": "500M"
         },
         "default": {
             "description": "默认优先级任务队列",
             "concurrency": 5,
-            "instances": 3,
+            "instances": 1,
             "maxMemory": "500M"
         },
         "low": {

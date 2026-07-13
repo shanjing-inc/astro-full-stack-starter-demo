@@ -80,6 +80,9 @@ describe("queue config", () => {
         expect(queueConfigs).toHaveLength(3);
         expect(queueConfig.pm2.script).toBe("scripts/start-queue-worker.mjs");
         expect(queueConfig.queues.critical.concurrency).toBe(2);
+        expect(queueConfig.queues.critical.instances).toBe(1);
+        expect(queueConfig.queues.default.instances).toBe(1);
+        expect(queueConfig.queues.low.instances).toBe(1);
         expect(getQueueConfigByQueueName("low")).toEqual(
             expect.objectContaining({
                 name: "low",

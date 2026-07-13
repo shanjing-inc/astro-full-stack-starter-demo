@@ -21,6 +21,25 @@ const fs = require("fs");
 const path = require("path");
 const projectRoot = path.resolve(__dirname, "../..");
 const queueConfig = require(path.join(projectRoot, "src/queues/config.json"));
+
+function assertFlatQueueConfig(config) {
+    if (config && typeof config === "object" && config.channels && !config.queues) {
+        throw new Error(
+            "[PM2] Queue config uses legacy channel model (channels). " +
+                "Migrate to flat queues + --queues. See starter docs: guides/queues (channel→flat migration)."
+        );
+    }
+
+    if (!config || typeof config !== "object" || !config.queues || typeof config.queues !== "object") {
+        throw new Error(
+            "[PM2] Queue config.json must provide flat queues. " +
+                "Missing queues. See starter docs: guides/queues (channel→flat migration)."
+        );
+    }
+}
+
+assertFlatQueueConfig(queueConfig);
+
 const pm2BaseConfig = queueConfig.pm2;
 const schedulerConfig = queueConfig.scheduler;
 const workerScript = path.resolve(projectRoot, pm2BaseConfig.script);

@@ -1,8 +1,7 @@
-import { uploadSentrySourcemaps } from "@shanjing/astro-full-stack-starter/observability/sentry/sourcemaps";
-
-const urlPrefixes = process.env.SENTRY_URL_PREFIX?.trim()
-    ? [process.env.SENTRY_URL_PREFIX.trim()]
-    : ["app:///dist/deno", "~/dist/deno"];
+import {
+    resolveSentrySourcemapUrlPrefixes,
+    uploadSentrySourcemaps,
+} from "@shanjing/astro-full-stack-starter/observability/sentry/sourcemaps";
 
 uploadSentrySourcemaps({
     dist: "deno",
@@ -12,7 +11,11 @@ uploadSentrySourcemaps({
     ],
     sourceDir: "src",
     sourcemapDir: "dist/sentry-sourcemaps",
-    urlPrefixes,
+    // Defaults include app:/// (Deno NormalizePaths) + historical prefixes.
+    // SENTRY_URL_PREFIX is additive, not a full replace.
+    urlPrefixes: resolveSentrySourcemapUrlPrefixes({
+        extra: process.env.SENTRY_URL_PREFIX,
+    }),
     validateFiles: [
         "dist/deno/server/entry.mjs",
         "dist/deno/queues/worker.mjs",
