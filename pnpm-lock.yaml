@@ -25,7 +25,7 @@ importers:
         version: 4.12.0(graphql@16.14.0)
       '@pothos/plugin-drizzle':
         specifier: ^0.17.1
-        version: 0.17.4(@pothos/core@4.12.0(graphql@16.14.0))(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(graphql@16.14.0)
+        version: 0.17.4(@pothos/core@4.12.0(graphql@16.14.0))(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(graphql@16.14.0)
       '@sentry/astro':
         specifier: ^10.51.0
         version: 10.54.0(astro@6.3.8(@types/node@25.9.1)(ioredis@5.11.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(yaml@2.9.0))(rollup@4.60.4)
@@ -33,11 +33,11 @@ importers:
         specifier: ^10.51.0
         version: 10.54.0
       '@shanjing/astro-full-stack-starter':
-        specifier: 0.8.0
-        version: 0.8.0(7eecee48fdd6fb64d0395dbd01a1c142)
+        specifier: 0.9.6
+        version: 0.9.6(e6a73051c1b803a73b800aecdfee0d22)
       better-auth:
         specifier: ^1.6.9
-        version: 1.6.11(@opentelemetry/api@1.9.1)(better-sqlite3@12.10.0)(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(mysql2@3.22.4(@types/node@25.9.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)
+        version: 1.6.11(@opentelemetry/api@1.9.1)(better-sqlite3@12.10.0)(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(mysql2@3.22.4(@types/node@25.9.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)
       bullmq:
         specifier: ^5.73.5
         version: 5.77.6
@@ -49,10 +49,10 @@ importers:
         version: 2.1.1
       drizzle-orm:
         specifier: beta
-        version: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+        version: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
       drizzle-zod:
         specifier: ^0.8.3
-        version: 0.8.3(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(zod@4.4.3)
+        version: 0.8.3(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(zod@4.4.3)
       graphql:
         specifier: ^16.13.2
         version: 16.14.0
@@ -198,6 +198,9 @@ importers:
       jsdom:
         specifier: ^29.0.2
         version: 29.1.1(@noble/hashes@2.2.0)
+      lint-staged:
+        specifier: ^17.0.7
+        version: 17.0.8
       prettier:
         specifier: ^3.8.3
         version: 3.8.3
@@ -602,6 +605,9 @@ packages:
   '@csstools/css-tokenizer@4.0.0':
     resolution: {integrity: sha512-QxULHAm7cNu72w97JUNCBFODFaXpbDg+dP8b/oWFAZ2MTRppA3U00Y2L1HqaS4J6yBqxwa/Y3nMBaxVKbB/NsA==}
     engines: {node: '>=20.19.0'}
+
+  '@date-fns/tz@1.5.0':
+    resolution: {integrity: sha512-lwYN/vDPeNRULcepoE/LO2Pgx+7/RV+S9ARfbc9lr2DtGkOD7pAiruHvbR1RX3Qyf6ja47EWJDMsNK5vK08DJg==}
 
   '@deno/astro-adapter@0.5.1':
     resolution: {integrity: sha512-i+xFc97lwDx30qoF94qONCHwn+YToCzTDDnFVurKBC2EgXmxPTb1LwCNUYrCJkLuyp/wK8EitAleisuHuuT3/Q==}
@@ -2975,24 +2981,36 @@ packages:
     resolution: {integrity: sha512-qcoSzo4n2MulVQ70UUPLq6dTleb2a2HwL2wuwvAgWhPChrYTuk6A6mDg6aQb9fairPAwFPiU9PzOANpoDJcz1A==}
     engines: {node: '>= 18'}
 
-  '@shanjing/astro-full-stack-starter@0.8.0':
-    resolution: {integrity: sha512-OO+du3Irk/ZEvUsB2k8b8Sf13sYjyaFVEEnMFC0+ziHIqxWT+Z6dEFwnyPvCHrhj3CSbXp53b6aKZhnSCzdQ6Q==, tarball: https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/@shanjing/astro-full-stack-starter/-/@shanjing/astro-full-stack-starter-0.8.0.tgz}
+  '@shanjing/astro-full-stack-starter@0.9.6':
+    resolution: {integrity: sha512-L3GBSerR0DoL9O7y88enW2cVXlbpcr4sNgDMsmfg+jATXmnKEbwryT2ls0/nEHNSE1YTipnu2/2S7HBY7KKqVA==, tarball: https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/@shanjing/astro-full-stack-starter/-/@shanjing/astro-full-stack-starter-0.9.6.tgz}
     peerDependencies:
       '@apollo/client': ^4.1.9
       '@nanostores/persistent': ^1.3.3
       '@nanostores/react': ^1.1.0
       '@pothos/core': ^4.12.0
       '@pothos/plugin-drizzle': ^0.17.1
+      '@sentry/astro': ^10.51.0
+      '@sentry/deno': ^10.51.0
       better-sqlite3: ^12.0.0
       drizzle-orm: 1.0.0-beta.22
       graphql: ^16.13.2
       graphql-yoga: ^5.21.0
+      mysql2: ^3.22.0
       nanostores: ^1.2.0
+      pg: ^8.16.3
       react: ^19.2.5
       react-dom: ^19.2.5
       react-router: ^7.15.1
     peerDependenciesMeta:
+      '@sentry/astro':
+        optional: true
+      '@sentry/deno':
+        optional: true
       better-sqlite3:
+        optional: true
+      mysql2:
+        optional: true
+      pg:
         optional: true
 
   '@shikijs/core@4.1.0':
@@ -3203,6 +3221,9 @@ packages:
 
   '@types/node@25.9.1':
     resolution: {integrity: sha512-xfrlY7UD5rMJk3ZVJP8BNzS28J36YJg+xp+LPXV1TdWxr8uMH5A860QNxYDGQe/ylDSgjxE52Q9VnO7p75tJxg==}
+
+  '@types/pg@8.20.0':
+    resolution: {integrity: sha512-bEPFOaMAHTEP1EzpvHTbmwR8UsFyHSKsRisLIHVMXnpNefSbGA1bD6CVy+qKjGSqmZqNqBDV2azOBo8TgkcVow==}
 
   '@types/react-dom@19.2.3':
     resolution: {integrity: sha512-jp2L/eY6fn+KgVVQAOqYItbF0VY/YApe5Mz2F0aykSO8gx31bYCZyvSeYxCHKvzHG5eZjc+zyaS5BrBWya2+kQ==}
@@ -4002,6 +4023,9 @@ packages:
 
   dataloader@2.2.3:
     resolution: {integrity: sha512-y2krtASINtPFS1rSDjacrFgn1dcUuoREVabwlOGOe4SdxenREqwjwjElAdwvbGM7kgZz9a3KVicWR7vcz8rnzA==}
+
+  date-fns@4.4.0:
+    resolution: {integrity: sha512-+1UMbeh68lH1SegH83CGWwpb6OHHbpSgr3+s5Eww5M4CAgswBpoWS0AjTOfEJ33HiYKz1hdj/KTFprzXHmq/6w==}
 
   debounce@2.2.0:
     resolution: {integrity: sha512-Xks6RUDLZFdz8LIdR6q0MTH44k7FikOmnh5xkSjMig6ch45afc8sjTjRQf3P6ax8dMgcQrYO/AR2RGWURrruqw==}
@@ -5458,6 +5482,15 @@ packages:
   lines-and-columns@1.2.4:
     resolution: {integrity: sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==}
 
+  lint-staged@17.0.8:
+    resolution: {integrity: sha512-B2P/d+jVW0UXOQ0MVMLrB/9ydA1P+zz6jYfdrbbEd9ur3S2rcbduFWKiUCC02Sm5hbC8nrm7y24WuYMG54HfxA==}
+    engines: {node: '>=22.22.1'}
+    hasBin: true
+
+  listr2@10.2.2:
+    resolution: {integrity: sha512-JtNtbZj8q5BnDMR7trpwvwk3RIrANtIVzEUm8w7amp6xelLgyuq+4WZoTH913XaQAoH/cNdYhaNzBPA2U3xbDw==}
+    engines: {node: '>=22.13.0'}
+
   listr2@9.0.5:
     resolution: {integrity: sha512-ME4Fb83LgEgwNw96RKNvKV4VTLuXfoKudAmm2lP8Kk87KaMK0/Xrx/aAkMWmT8mDb+3MlFDspfbCs7adjRxA2g==}
     engines: {node: '>=20.0.0'}
@@ -6082,6 +6115,17 @@ packages:
   pathe@2.0.3:
     resolution: {integrity: sha512-WUjGcAqP1gQacoQe+OBJsFA7Ld4DyXuUIjZ5cc75cLHvJ7dtNsTugphxIADwspS+AraAUePCKrSVtPLFj/F88w==}
 
+  pg-int8@1.0.1:
+    resolution: {integrity: sha512-WCtabS6t3c8SkpDBUlb1kjOs7l66xsGdKpIPZsg4wR+B3+u9UAum2odSsF9tnvxg80h4ZxLWMy4pRjOsFIqQpw==}
+    engines: {node: '>=4.0.0'}
+
+  pg-protocol@1.15.0:
+    resolution: {integrity: sha512-cq9sECI5s0+uPUXjbz8ioyPJni6RzsRib0US67i5IoTZKw8fNeYlVE7u8F4dG7vEJJtc5wdD1K189lCCUwqWTQ==}
+
+  pg-types@2.2.0:
+    resolution: {integrity: sha512-qTAAlrEsl8s4OiEQY69wDvcMIdQN6wdz5ojQiOy6YRMuynxenON0O5oCpJI6lshc6scgAY8qvJ2On/p+CXY0GA==}
+    engines: {node: '>=4'}
+
   piccolore@0.1.3:
     resolution: {integrity: sha512-o8bTeDWjE086iwKrROaDf31K0qC/BENdm15/uH9usSC/uZjJOKb2YGiVHfLY4GhwsERiPI1jmwI2XrA7ACOxVw==}
 
@@ -6121,6 +6165,22 @@ packages:
   postcss@8.5.15:
     resolution: {integrity: sha512-FfR8sjd4em2T6fb3I2MwAJU7HWVMr9zba+enmQeeWFfCbm+UOC/0X4DS8XtpUTMwWMGbjKYP7xjfNekzyGmB3A==}
     engines: {node: ^10 || ^12 || >=14}
+
+  postgres-array@2.0.0:
+    resolution: {integrity: sha512-VpZrUqU5A69eQyW2c5CA1jtLecCsN2U/bD6VilrFDWq5+5UIEVO7nazS3TEcHf1zuPYO/sqGvUvW62g86RXZuA==}
+    engines: {node: '>=4'}
+
+  postgres-bytea@1.0.1:
+    resolution: {integrity: sha512-5+5HqXnsZPE65IJZSMkZtURARZelel2oXUEO8rH83VS/hxH5vv1uHquPg5wZs8yMAfdv971IU+kcPUczi7NVBQ==}
+    engines: {node: '>=0.10.0'}
+
+  postgres-date@1.0.7:
+    resolution: {integrity: sha512-suDmjLVQg78nMK2UZ454hAG+OAW+HQPZ6n++TNDUX+L0+uUlLywnoxJKDou51Zm+zTCjrCl0Nq6J9C5hP9vK/Q==}
+    engines: {node: '>=0.10.0'}
+
+  postgres-interval@1.2.0:
+    resolution: {integrity: sha512-9ZhXKM/rw350N1ovuWHbGxnGh/SNJ4cnxHiM0rxE4VN41wsg8P8zWn9hv/buK00RP4WvlOyr/RBDiptyxVbkZQ==}
+    engines: {node: '>=0.10.0'}
 
   powershell-utils@0.1.0:
     resolution: {integrity: sha512-dM0jVuXJPsDN6DvRpea484tCUaMiXWjuCn++HGTqUWzGDjv5tZkEZldAJ/UMlqRYGFrD/etByo4/xOuC/snX2A==}
@@ -6223,6 +6283,16 @@ packages:
   rc@1.2.8:
     resolution: {integrity: sha512-y3bGgqKj3QBdxLbLkomlohkvsA8gdAiUQlSBJnBhfn+BPxg4bc62d8TcBW15wavDfgexCgccckhcZvywyQYPOw==}
     hasBin: true
+
+  react-day-picker@10.0.1:
+    resolution: {integrity: sha512-eNh6BlwcYInWaJtRv18mXQ06Ys/H6rdTZAnTaSdOYJuTpwP1JMCHNd1FDRadA+gbeinq+psdULN5Xnowy9mV8w==}
+    engines: {node: '>=18'}
+    peerDependencies:
+      '@types/react': '>=16.8.0'
+      react: '>=16.8.0'
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
 
   react-dom@19.2.6:
     resolution: {integrity: sha512-0prMI+hvBbPjsWnxDLxlCGyM8PN6UuWjEUCYmZhO67xIV9Xasa/r/vDnq+Xyq4Lo27g8QSbO5YzARu0D1Sps3g==}
@@ -6648,6 +6718,10 @@ packages:
   strict-event-emitter@0.5.1:
     resolution: {integrity: sha512-vMgjE/GGEPEFnhFub6pa4FmJBRBVOLpIII2hvCZ8Kzb7K0hlHo7mQv6xYrBvCL2LtAIBwFUK8wvuJgTVSQ5MFQ==}
 
+  string-argv@0.3.2:
+    resolution: {integrity: sha512-aqD2Q0144Z+/RqG52NeHEkZauTAUWJO8c6yTftGJKO3Tja5tUgIfmIl6kExvhtxSDP7fXB6DvzkfMpCd/F3G+Q==}
+    engines: {node: '>=0.6.19'}
+
   string-env-interpolation@1.0.1:
     resolution: {integrity: sha512-78lwMoCcn0nNu8LszbP1UA7g55OeE4v7rCeWnM5B453rnNr4aq+5it3FEYtZrSEiMvHZOZ9Jlqb0OD0M2VInqg==}
 
@@ -6807,6 +6881,10 @@ packages:
 
   tinyexec@1.2.2:
     resolution: {integrity: sha512-M/Q0B2cp4K7kynaT/vnED1j8TlLY+Pp7C6Wl2bl/7u/F0mUVwdyOpwomQb8JpYLitHUssAJRmLZdMCGsrx7i+g==}
+    engines: {node: '>=18'}
+
+  tinyexec@1.2.4:
+    resolution: {integrity: sha512-SHf/r48b7vOrjve9PxJo3MN5v5yuyjHvdUcrQffT3WXMUfnGmHDVbC4k3sHJaJTgZCwpUplIaAo5ANtMyp3YHg==}
     engines: {node: '>=18'}
 
   tinyglobby@0.2.16:
@@ -7389,6 +7467,10 @@ packages:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
 
+  wrap-ansi@10.0.0:
+    resolution: {integrity: sha512-SGcvg80f0wUy2/fXES19feHMz8E0JoXv2uNgHOu4Dgi2OrCy1lqwFYEJz1BLbDI0exjPMe/ZdzZ/YpGECBG/aQ==}
+    engines: {node: '>=20'}
+
   wrap-ansi@6.2.0:
     resolution: {integrity: sha512-r6lPcBGxZXlIcymEu7InxDMhdW0KDxpLgoFLcguasxCaJ/SOIZwINatK9KY/tf+ZrlywOKU0UDj3ATXUBfxJXA==}
     engines: {node: '>=8'}
@@ -7426,6 +7508,10 @@ packages:
 
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
+
+  xtend@4.0.2:
+    resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
+    engines: {node: '>=0.4'}
 
   xxhash-wasm@1.1.0:
     resolution: {integrity: sha512-147y/6YNh+tlp6nd/2pWq38i9h6mz/EuQ6njIrmW8D1BS5nCqs0P6DG+m6zTGnNz5I+uhZ0SHxBs9BsPrwcKDA==}
@@ -7883,12 +7969,12 @@ snapshots:
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
 
-  '@better-auth/drizzle-adapter@1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))':
+  '@better-auth/drizzle-adapter@1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))':
     dependencies:
       '@better-auth/core': 1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0)
       '@better-auth/utils': 0.4.0
     optionalDependencies:
-      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
 
   '@better-auth/kysely-adapter@1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(kysely@0.28.17)':
     dependencies:
@@ -7967,6 +8053,8 @@ snapshots:
       css-tree: 3.2.1
 
   '@csstools/css-tokenizer@4.0.0': {}
+
+  '@date-fns/tz@1.5.0': {}
 
   '@deno/astro-adapter@0.5.1(@opentelemetry/api@1.9.1)(astro@6.3.8(@types/node@25.9.1)(ioredis@5.11.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(yaml@2.9.0))':
     dependencies:
@@ -9200,10 +9288,10 @@ snapshots:
     dependencies:
       graphql: 16.14.0
 
-  '@pothos/plugin-drizzle@0.17.4(@pothos/core@4.12.0(graphql@16.14.0))(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(graphql@16.14.0)':
+  '@pothos/plugin-drizzle@0.17.4(@pothos/core@4.12.0(graphql@16.14.0))(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(graphql@16.14.0)':
     dependencies:
       '@pothos/core': 4.12.0(graphql@16.14.0)
-      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
       graphql: 16.14.0
 
   '@radix-ui/number@1.1.1': {}
@@ -10201,32 +10289,38 @@ snapshots:
       - rollup
       - supports-color
 
-  '@shanjing/astro-full-stack-starter@0.8.0(7eecee48fdd6fb64d0395dbd01a1c142)':
+  '@shanjing/astro-full-stack-starter@0.9.6(e6a73051c1b803a73b800aecdfee0d22)':
     dependencies:
       '@apollo/client': 4.2.0(graphql-ws@6.0.8(crossws@0.3.5)(graphql@16.14.0)(ws@8.21.0))(graphql@16.14.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(rxjs@7.8.2)
       '@nanostores/persistent': 1.3.4(nanostores@1.3.0)
       '@nanostores/react': 1.1.0(nanostores@1.3.0)(react@19.2.6)
       '@pothos/core': 4.12.0(graphql@16.14.0)
-      '@pothos/plugin-drizzle': 0.17.4(@pothos/core@4.12.0(graphql@16.14.0))(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(graphql@16.14.0)
+      '@pothos/plugin-drizzle': 0.17.4(@pothos/core@4.12.0(graphql@16.14.0))(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(graphql@16.14.0)
+      '@types/pg': 8.20.0
       astro: 6.3.8(@types/node@25.9.1)(ioredis@5.11.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(yaml@2.9.0)
       bullmq: 5.77.6
       class-variance-authority: 0.7.1
       clsx: 2.1.1
-      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+      esbuild: 0.28.0
       graphql: 16.14.0
       graphql-yoga: 5.21.0(graphql@16.14.0)
       ioredis: 5.11.0
       lucide-react: 1.16.0(react@19.2.6)
-      mysql2: 3.22.4(@types/node@25.9.1)
       nanostores: 1.3.0
       radix-ui: 1.4.3(@types/react-dom@19.2.3(@types/react@19.2.15))(@types/react@19.2.15)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
       react: 19.2.6
+      react-day-picker: 10.0.1(@types/react@19.2.15)(react@19.2.6)
       react-dom: 19.2.6(react@19.2.6)
       react-router: 7.15.1(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      source-map-js: 1.2.1
       tailwind-merge: 3.6.0
       zod: 4.4.3
     optionalDependencies:
+      '@sentry/astro': 10.54.0(astro@6.3.8(@types/node@25.9.1)(ioredis@5.11.0)(jiti@2.7.0)(lightningcss@1.32.0)(rollup@4.60.4)(yaml@2.9.0))(rollup@4.60.4)
+      '@sentry/deno': 10.54.0
       better-sqlite3: 12.10.0
+      mysql2: 3.22.4(@types/node@25.9.1)
     transitivePeerDependencies:
       - '@azure/app-configuration'
       - '@azure/cosmos'
@@ -10472,6 +10566,12 @@ snapshots:
   '@types/node@25.9.1':
     dependencies:
       undici-types: 7.24.6
+
+  '@types/pg@8.20.0':
+    dependencies:
+      '@types/node': 25.9.1
+      pg-protocol: 1.15.0
+      pg-types: 2.2.0
 
   '@types/react-dom@19.2.3(@types/react@19.2.15)':
     dependencies:
@@ -11053,10 +11153,10 @@ snapshots:
 
   baseline-browser-mapping@2.10.32: {}
 
-  better-auth@1.6.11(@opentelemetry/api@1.9.1)(better-sqlite3@12.10.0)(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(mysql2@3.22.4(@types/node@25.9.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7):
+  better-auth@1.6.11(@opentelemetry/api@1.9.1)(better-sqlite3@12.10.0)(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(mysql2@3.22.4(@types/node@25.9.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7):
     dependencies:
       '@better-auth/core': 1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0)
-      '@better-auth/drizzle-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))
+      '@better-auth/drizzle-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))
       '@better-auth/kysely-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)(kysely@0.28.17)
       '@better-auth/memory-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)
       '@better-auth/mongo-adapter': 1.6.11(@better-auth/core@1.6.11(@better-auth/utils@0.4.0)(@better-fetch/fetch@1.1.21)(@opentelemetry/api@1.9.1)(better-call@1.3.5(zod@4.4.3))(jose@6.2.3)(kysely@0.28.17)(nanostores@1.3.0))(@better-auth/utils@0.4.0)
@@ -11075,7 +11175,7 @@ snapshots:
     optionalDependencies:
       better-sqlite3: 12.10.0
       drizzle-kit: 1.0.0-beta.21
-      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
       mysql2: 3.22.4(@types/node@25.9.1)
       react: 19.2.6
       react-dom: 19.2.6(react@19.2.6)
@@ -11439,6 +11539,8 @@ snapshots:
 
   dataloader@2.2.3: {}
 
+  date-fns@4.4.0: {}
+
   debounce@2.2.0: {}
 
   debug@4.4.3:
@@ -11557,18 +11659,19 @@ snapshots:
       get-tsconfig: 4.14.0
       jiti: 2.7.0
 
-  drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3):
+  drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3):
     optionalDependencies:
       '@opentelemetry/api': 1.9.1
       '@types/better-sqlite3': 7.6.13
+      '@types/pg': 8.20.0
       better-sqlite3: 12.10.0
       mysql2: 3.22.4(@types/node@25.9.1)
       valibot: 1.4.1(typescript@5.9.3)
       zod: 4.4.3
 
-  drizzle-zod@0.8.3(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(zod@4.4.3):
+  drizzle-zod@0.8.3(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(zod@4.4.3):
     dependencies:
-      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
+      drizzle-orm: 1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3)
       zod: 4.4.3
 
   dset@3.1.4: {}
@@ -12997,6 +13100,23 @@ snapshots:
 
   lines-and-columns@1.2.4: {}
 
+  lint-staged@17.0.8:
+    dependencies:
+      listr2: 10.2.2
+      picomatch: 4.0.4
+      string-argv: 0.3.2
+      tinyexec: 1.2.4
+    optionalDependencies:
+      yaml: 2.9.0
+
+  listr2@10.2.2:
+    dependencies:
+      cli-truncate: 5.2.0
+      eventemitter3: 5.0.4
+      log-update: 6.1.0
+      rfdc: 1.4.1
+      wrap-ansi: 10.0.0
+
   listr2@9.0.5:
     dependencies:
       cli-truncate: 5.2.0
@@ -13817,6 +13937,18 @@ snapshots:
 
   pathe@2.0.3: {}
 
+  pg-int8@1.0.1: {}
+
+  pg-protocol@1.15.0: {}
+
+  pg-types@2.2.0:
+    dependencies:
+      pg-int8: 1.0.1
+      postgres-array: 2.0.0
+      postgres-bytea: 1.0.1
+      postgres-date: 1.0.7
+      postgres-interval: 1.2.0
+
   piccolore@0.1.3: {}
 
   picocolors@1.1.1: {}
@@ -13847,6 +13979,16 @@ snapshots:
       nanoid: 3.3.12
       picocolors: 1.1.1
       source-map-js: 1.2.1
+
+  postgres-array@2.0.0: {}
+
+  postgres-bytea@1.0.1: {}
+
+  postgres-date@1.0.7: {}
+
+  postgres-interval@1.2.0:
+    dependencies:
+      xtend: 4.0.2
 
   powershell-utils@0.1.0: {}
 
@@ -14006,6 +14148,14 @@ snapshots:
       ini: 1.3.8
       minimist: 1.2.8
       strip-json-comments: 2.0.1
+
+  react-day-picker@10.0.1(@types/react@19.2.15)(react@19.2.6):
+    dependencies:
+      '@date-fns/tz': 1.5.0
+      date-fns: 4.4.0
+      react: 19.2.6
+    optionalDependencies:
+      '@types/react': 19.2.15
 
   react-dom@19.2.6(react@19.2.6):
     dependencies:
@@ -14593,6 +14743,8 @@ snapshots:
 
   strict-event-emitter@0.5.1: {}
 
+  string-argv@0.3.2: {}
+
   string-env-interpolation@1.0.1: {}
 
   string-width@4.2.3:
@@ -14771,6 +14923,8 @@ snapshots:
   tinyclip@0.1.13: {}
 
   tinyexec@1.2.2: {}
+
+  tinyexec@1.2.4: {}
 
   tinyglobby@0.2.16:
     dependencies:
@@ -15306,6 +15460,12 @@ snapshots:
 
   word-wrap@1.2.5: {}
 
+  wrap-ansi@10.0.0:
+    dependencies:
+      ansi-styles: 6.2.3
+      string-width: 8.2.1
+      strip-ansi: 7.2.0
+
   wrap-ansi@6.2.0:
     dependencies:
       ansi-styles: 4.3.0
@@ -15336,6 +15496,8 @@ snapshots:
   xml-name-validator@5.0.0: {}
 
   xmlchars@2.2.0: {}
+
+  xtend@4.0.2: {}
 
   xxhash-wasm@1.1.0: {}
 
