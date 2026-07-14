@@ -12,6 +12,7 @@ export {
     getQueueExecutionRecordTtlSeconds,
     getQueueJobRetentionCount,
     getQueueJobRetentionSeconds,
+    getQueueProcessGroups,
     getQueueRuntimeConfiguration,
     getQueueSchedulerConfig,
     getQueueSchedulerRuntimeConfig,
@@ -19,15 +20,18 @@ export {
     queueDashboardRedisConnectTimeoutMs,
     queueDashboardRedisReadyTimeoutMs,
     QueueConfigurationError,
+    resolveQueueWorkerProcessSpecs,
 } from "@shanjing/astro-full-stack-starter/queue/config";
 
 export type {
     QueueConfig,
     QueuePm2Config,
+    QueueProcessGroupConfig,
     QueueRuntimeConfiguration,
     QueueRuntimeConfigurationInput,
     QueueRuntimeQueueConfig,
     QueueSchedulerConfig,
+    QueueWorkerProcessSpec,
 } from "@shanjing/astro-full-stack-starter/queue/config";
 
 export {

@@ -341,6 +341,7 @@ export type QueueDashboardPayload = {
   queueCount?: Maybe<Scalars['Int']['output']>;
   queues?: Maybe<Array<QueueSnapshot>>;
   updatedAt?: Maybe<Scalars['Float']['output']>;
+  workerProcesses?: Maybe<Array<QueueWorkerProcess>>;
 };
 
 export type QueueExecutionRecord = {
@@ -462,15 +463,31 @@ export type QueueSnapshot = {
   active?: Maybe<Scalars['Int']['output']>;
   binding?: Maybe<Scalars['String']['output']>;
   completed?: Maybe<Scalars['Int']['output']>;
+  concurrency?: Maybe<Scalars['Int']['output']>;
   delayed?: Maybe<Scalars['Int']['output']>;
   description?: Maybe<Scalars['String']['output']>;
   failed?: Maybe<Scalars['Int']['output']>;
   isListening?: Maybe<Scalars['Boolean']['output']>;
   isPaused?: Maybe<Scalars['Boolean']['output']>;
+  maxMemory?: Maybe<Scalars['String']['output']>;
   physicalQueueName?: Maybe<Scalars['String']['output']>;
   queueName?: Maybe<Scalars['String']['output']>;
   waiting?: Maybe<Scalars['Int']['output']>;
   workerCount?: Maybe<Scalars['Int']['output']>;
+  workerProcessGroup?: Maybe<Scalars['String']['output']>;
+  workerProcessName?: Maybe<Scalars['String']['output']>;
+};
+
+export type QueueWorkerProcess = {
+  __typename?: 'QueueWorkerProcess';
+  instances?: Maybe<Scalars['Int']['output']>;
+  isOnline?: Maybe<Scalars['Boolean']['output']>;
+  maxMemory?: Maybe<Scalars['String']['output']>;
+  memoryBytes?: Maybe<Scalars['Float']['output']>;
+  name?: Maybe<Scalars['String']['output']>;
+  onlineInstances?: Maybe<Scalars['Int']['output']>;
+  processGroup?: Maybe<Scalars['String']['output']>;
+  queues?: Maybe<Array<Scalars['String']['output']>>;
 };
 
 export type ShopFilters = {

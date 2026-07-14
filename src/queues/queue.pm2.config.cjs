@@ -11,7 +11,7 @@
  *   pm2 monit
  *
  * 注意：PM2 会自动设置以下环境变量用于 Worker 识别：
- *   - name: 应用名称（如 queue-critical）
+ *   - name: 应用名称（如 queue-workers / queue-critical）
  *   - NODE_APP_INSTANCE: 实例编号（0, 1, 2...）
  *   - pm2_instance_name: 应用名称（显式设置）
  *   - pm2_instance_id: 实例编号（显式设置）
@@ -30,7 +30,12 @@ function assertFlatQueueConfig(config) {
         );
     }
 
-    if (!config || typeof config !== "object" || !config.queues || typeof config.queues !== "object") {
+    if (
+        !config ||
+        typeof config !== "object" ||
+        !config.queues ||
+        typeof config.queues !== "object"
+    ) {
         throw new Error(
             "[PM2] Queue config.json must provide flat queues. " +
                 "Missing queues. See starter docs: guides/queues (channel→flat migration)."
@@ -94,32 +99,111 @@ function parseEnvFile(filePath) {
 // 加载 .env 文件中的环境变量
 const envFileVars = parseEnvFile(".env");
 
-function createPm2AppConfig(queueName, queueConfig) {
+function createWorkerEnv(appName) {
     return {
-        name: `queue-${queueName}`,
-        cwd: projectRoot,
-        script: workerScript,
-        args: `--queues=${queueName}`,
-        instances: queueConfig.instances,
-        exec_mode: pm2BaseConfig.exec_mode,
-        autorestart: pm2BaseConfig.autorestart,
-        watch: pm2BaseConfig.watch,
-        max_memory_restart: queueConfig.maxMemory,
         env: {
             ...envFileVars,
             NODE_ENV: "production",
-            pm2_instance_name: `queue-${queueName}`,
+            pm2_instance_name: appName,
         },
         env_production: {
             ...envFileVars,
             NODE_ENV: "production",
-            pm2_instance_name: `queue-${queueName}`,
+            pm2_instance_name: appName,
         },
         env_development: {
             ...envFileVars,
             NODE_ENV: "development",
-            pm2_instance_name: `queue-${queueName}`,
+            pm2_instance_name: appName,
         },
+    };
+}
+
+/**
+ * 解析 worker 进程规格：
+ * - 配置了非空 processGroups：一进程多队列
+ * - 否则：一队列一进程（兼容旧行为）
+ */
+function resolveWorkerProcessSpecs(config) {
+    const processGroups =
+        config.processGroups && typeof config.processGroups === "object"
+            ? config.processGroups
+            : {};
+    const groupEntries = Object.entries(processGroups);
+
+    if (groupEntries.length === 0) {
+        return Object.entries(config.queues).map(([queueName, queueRuntimeConfig]) => ({
+            instances: queueRuntimeConfig.instances,
+            maxMemory: queueRuntimeConfig.maxMemory,
+            name: queueName,
+            queues: [queueName],
+        }));
+    }
+
+    const assignedQueues = new Set();
+    const specs = [];
+
+    for (const [groupName, groupConfig] of groupEntries) {
+        if (!groupName || typeof groupName !== "string") {
+            throw new Error("[PM2] processGroups key must be a non-empty group name.");
+        }
+
+        if (!groupConfig || !Array.isArray(groupConfig.queues) || groupConfig.queues.length === 0) {
+            throw new Error(
+                `[PM2] processGroups.${groupName}.queues must list at least one queue.`
+            );
+        }
+
+        const queues = [];
+
+        for (const queueName of groupConfig.queues) {
+            if (typeof queueName !== "string" || !queueName.trim()) {
+                throw new Error(
+                    `[PM2] processGroups.${groupName}.queues contains an invalid queue name.`
+                );
+            }
+
+            if (!config.queues[queueName]) {
+                throw new Error(
+                    `[PM2] processGroups.${groupName} references unknown queue "${queueName}".`
+                );
+            }
+
+            if (assignedQueues.has(queueName)) {
+                throw new Error(
+                    `[PM2] queue "${queueName}" is assigned to multiple processGroups.`
+                );
+            }
+
+            assignedQueues.add(queueName);
+            queues.push(queueName);
+        }
+
+        specs.push({
+            instances: groupConfig.instances ?? 1,
+            maxMemory: groupConfig.maxMemory || "500M",
+            name: groupName,
+            queues,
+        });
+    }
+
+    return specs;
+}
+
+function createPm2WorkerApp(spec) {
+    const appName = `queue-${spec.name}`;
+
+    return {
+        name: appName,
+        cwd: projectRoot,
+        script: workerScript,
+        args: `--queues=${spec.queues.join(",")}`,
+        instances: spec.instances,
+        exec_mode: pm2BaseConfig.exec_mode,
+        autorestart: pm2BaseConfig.autorestart,
+        watch: pm2BaseConfig.watch,
+        max_memory_restart: spec.maxMemory,
+        ...createWorkerEnv(appName),
         log_date_format: pm2BaseConfig.log_date_format,
         merge_logs: pm2BaseConfig.merge_logs,
         restart_delay: pm2BaseConfig.restart_delay,
@@ -129,9 +213,7 @@ function createPm2AppConfig(queueName, queueConfig) {
     };
 }
 
-const apps = Object.entries(queueConfig.queues).map(([queueName, config]) =>
-    createPm2AppConfig(queueName, config)
-);
+const apps = resolveWorkerProcessSpecs(queueConfig).map((spec) => createPm2WorkerApp(spec));
 
 apps.push({
     name: "queue-scheduler",
@@ -142,21 +224,7 @@ apps.push({
     autorestart: pm2BaseConfig.autorestart,
     watch: false,
     max_memory_restart: schedulerConfig.maxMemory,
-    env: {
-        ...envFileVars,
-        NODE_ENV: "production",
-        pm2_instance_name: "queue-scheduler",
-    },
-    env_production: {
-        ...envFileVars,
-        NODE_ENV: "production",
-        pm2_instance_name: "queue-scheduler",
-    },
-    env_development: {
-        ...envFileVars,
-        NODE_ENV: "development",
-        pm2_instance_name: "queue-scheduler",
-    },
+    ...createWorkerEnv("queue-scheduler"),
     log_date_format: pm2BaseConfig.log_date_format,
     merge_logs: pm2BaseConfig.merge_logs,
     restart_delay: pm2BaseConfig.restart_delay,
@@ -169,6 +237,8 @@ const includeQueueAll =
     process.env.PM2_INCLUDE_QUEUE_ALL === "true" || envFileVars.PM2_INCLUDE_QUEUE_ALL === "true";
 
 if (includeQueueAll) {
+    // 开发调试用：无 --queues 时 worker 监听全部已配置队列。
+    // 若已用 processGroups 覆盖全部队列，通常不需要再开 queue-all，避免双消费。
     apps.push({
         name: "queue-all",
         cwd: projectRoot,
@@ -178,16 +248,7 @@ if (includeQueueAll) {
         autorestart: pm2BaseConfig.autorestart,
         watch: pm2BaseConfig.watch,
         max_memory_restart: "500M",
-        env: {
-            ...envFileVars,
-            NODE_ENV: "production",
-            pm2_instance_name: "queue-all",
-        },
-        env_production: {
-            ...envFileVars,
-            NODE_ENV: "production",
-            pm2_instance_name: "queue-all",
-        },
+        ...createWorkerEnv("queue-all"),
         log_date_format: pm2BaseConfig.log_date_format,
         merge_logs: pm2BaseConfig.merge_logs,
         restart_delay: pm2BaseConfig.restart_delay,

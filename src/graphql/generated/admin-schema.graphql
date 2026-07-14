@@ -187,6 +187,7 @@ type QueueDashboardPayload {
   queueCount: Int
   queues: [QueueSnapshot!]
   updatedAt: Float
+  workerProcesses: [QueueWorkerProcess!]
 }
 
 type QueueExecutionRecord {
@@ -298,15 +299,30 @@ type QueueSnapshot {
   active: Int
   binding: String
   completed: Int
+  concurrency: Int
   delayed: Int
   description: String
   failed: Int
   isListening: Boolean
   isPaused: Boolean
+  maxMemory: String
   physicalQueueName: String
   queueName: String
   waiting: Int
   workerCount: Int
+  workerProcessGroup: String
+  workerProcessName: String
+}
+
+type QueueWorkerProcess {
+  instances: Int
+  isOnline: Boolean
+  maxMemory: String
+  memoryBytes: Float
+  name: String
+  onlineInstances: Int
+  processGroup: String
+  queues: [String!]
 }
 
 input ShopFilters {

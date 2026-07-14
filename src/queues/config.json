@@ -38,5 +38,13 @@
         "maxMemory": "256M",
         "slotLockTtlMs": 3888000000,
         "tickIntervalMs": 30000
+    },
+    "processGroups": {
+        "workers": {
+            "description": "全部业务队列共用一个 worker 进程；各队列 concurrency 仍独立",
+            "queues": ["critical", "default", "low"],
+            "instances": 1,
+            "maxMemory": "500M"
+        }
     }
 }
