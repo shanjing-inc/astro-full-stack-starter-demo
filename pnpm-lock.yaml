@@ -33,8 +33,8 @@ importers:
         specifier: ^10.51.0
         version: 10.54.0
       '@shanjing/astro-full-stack-starter':
-        specifier: 0.9.6
-        version: 0.9.6(e6a73051c1b803a73b800aecdfee0d22)
+        specifier: 0.9.7
+        version: 0.9.7(e6a73051c1b803a73b800aecdfee0d22)
       better-auth:
         specifier: ^1.6.9
         version: 1.6.11(@opentelemetry/api@1.9.1)(better-sqlite3@12.10.0)(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(mysql2@3.22.4(@types/node@25.9.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)
@@ -2981,8 +2981,8 @@ packages:
     resolution: {integrity: sha512-qcoSzo4n2MulVQ70UUPLq6dTleb2a2HwL2wuwvAgWhPChrYTuk6A6mDg6aQb9fairPAwFPiU9PzOANpoDJcz1A==}
     engines: {node: '>= 18'}
 
-  '@shanjing/astro-full-stack-starter@0.9.6':
-    resolution: {integrity: sha512-L3GBSerR0DoL9O7y88enW2cVXlbpcr4sNgDMsmfg+jATXmnKEbwryT2ls0/nEHNSE1YTipnu2/2S7HBY7KKqVA==, tarball: https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/@shanjing/astro-full-stack-starter/-/@shanjing/astro-full-stack-starter-0.9.6.tgz}
+  '@shanjing/astro-full-stack-starter@0.9.7':
+    resolution: {integrity: sha512-6f0av9TC4SX61BY6I/I0wxsIBjtfsZD+BBjjJC4TBouwDXMC++fCTMz00gjI3+tin2aHeMtHfcNxpvYFcgZfIQ==, tarball: https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/@shanjing/astro-full-stack-starter/-/@shanjing/astro-full-stack-starter-0.9.7.tgz}
     peerDependencies:
       '@apollo/client': ^4.1.9
       '@nanostores/persistent': ^1.3.3
@@ -10289,7 +10289,7 @@ snapshots:
       - rollup
       - supports-color
 
-  '@shanjing/astro-full-stack-starter@0.9.6(e6a73051c1b803a73b800aecdfee0d22)':
+  '@shanjing/astro-full-stack-starter@0.9.7(e6a73051c1b803a73b800aecdfee0d22)':
     dependencies:
       '@apollo/client': 4.2.0(graphql-ws@6.0.8(crossws@0.3.5)(graphql@16.14.0)(ws@8.21.0))(graphql@16.14.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(rxjs@7.8.2)
       '@nanostores/persistent': 1.3.4(nanostores@1.3.0)
