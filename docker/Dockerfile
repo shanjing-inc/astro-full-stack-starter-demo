@@ -11,9 +11,10 @@ COPY . .
 ARG NPM_REGISTRY_URL=https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/
 ARG NPM_REGISTRY_AUTH_TOKEN
 
-RUN _NPM_REGISTRY_URL="${NPM_REGISTRY_URL:-}" && \
-    _NPM_REGISTRY_AUTH_TOKEN="${NPM_REGISTRY_AUTH_TOKEN:-}" && \
-    _NPM_REGISTRY_HOST_PATH="" && \
+RUN set -eu; \
+    _NPM_REGISTRY_URL="${NPM_REGISTRY_URL:-}"; \
+    _NPM_REGISTRY_AUTH_TOKEN="${NPM_REGISTRY_AUTH_TOKEN:-}"; \
+    _NPM_REGISTRY_HOST_PATH=""; \
     if [ -n "$_NPM_REGISTRY_URL" ]; then \
         pnpm config set @shanjing:registry "$_NPM_REGISTRY_URL"; \
     fi; \
@@ -22,9 +23,8 @@ RUN _NPM_REGISTRY_URL="${NPM_REGISTRY_URL:-}" && \
             echo "NPM_REGISTRY_URL is required when NPM_REGISTRY_AUTH_TOKEN is set." >&2; \
             exit 1; \
         fi; \
-        _NPM_REGISTRY_HOST_PATH="$(printf '%s' "$_NPM_REGISTRY_URL" | sed -E 's#^https?://##; s#/*$##')" && \
-        pnpm config set "//${_NPM_REGISTRY_HOST_PATH}/:_authToken" "$_NPM_REGISTRY_AUTH_TOKEN" && \
-        pnpm config set always-auth true; \
+        _NPM_REGISTRY_HOST_PATH="$(printf '%s' "$_NPM_REGISTRY_URL" | sed -E 's#^https?://##; s#/*$##')"; \
+        pnpm config set "//${_NPM_REGISTRY_HOST_PATH}/:_authToken" "$_NPM_REGISTRY_AUTH_TOKEN"; \
     fi; \
     if [ -f pnpm-lock.yaml ]; then \
         pnpm install --frozen-lockfile --prod=false; \
@@ -34,7 +34,6 @@ RUN _NPM_REGISTRY_URL="${NPM_REGISTRY_URL:-}" && \
     test -x node_modules/.bin/astro; \
     if [ -n "$_NPM_REGISTRY_HOST_PATH" ]; then \
         pnpm config delete "//${_NPM_REGISTRY_HOST_PATH}/:_authToken" || true; \
-        pnpm config delete always-auth || true; \
     fi
 
 RUN pnpm build
