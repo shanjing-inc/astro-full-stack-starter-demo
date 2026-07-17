@@ -20,7 +20,7 @@ describe("queue startup scripts", () => {
         expect(source).not.toContain("exec pm2 start");
     });
 
-    it("starts the queue daemon with a bounded timeout before web startup", () => {
+    it("starts the queue daemon fail-fast with a bounded timeout before web startup", () => {
         const source = readFileSync(path.join(projectRoot, "scripts/runtime/start-web.sh"), "utf8");
 
         expect(source).toContain('QUEUE_PM2_HOME="${QUEUE_PM2_HOME:-/app/.pm2-queue}"');
@@ -33,6 +33,8 @@ describe("queue startup scripts", () => {
         expect(source).toContain(
             'timeout "$QUEUE_DAEMON_TIMEOUT_SECONDS" "$SCRIPT_DIR/start-queue-daemon.sh"'
         );
+        expect(source).toContain("refuse to start web (fail-fast)");
+        expect(source).toContain("exit 1");
         expect(source).toContain('exec "$@" "$SERVER_ENTRY"');
     });
 

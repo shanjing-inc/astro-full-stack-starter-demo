@@ -6,17 +6,14 @@ import { createBetterSqliteDb } from "@shanjing/astro-full-stack-starter/db/sqli
 import { getTableConfig } from "drizzle-orm/sqlite-core";
 import { describe, expect, it, vi } from "vitest";
 
-import {
-    createShopOrderFixture,
-    createShopOrderFixtureList,
-} from "../../fixtures/sqlite/factories";
+import { createShopOrderFixture, createShopOrderFixtureList } from "../fixtures/sqlite/factories";
 import {
     createSqliteTestDatabase,
     createSqliteTestDatabaseProvider,
-} from "../../fixtures/sqlite/provider";
-import { order, product, shop, sqliteDbSchema, user } from "../../fixtures/sqlite/schemas";
-import { sqliteDbRelations } from "../../fixtures/sqlite/relations";
-import { initializeSqliteTestDatabase } from "../../fixtures/sqlite/setup";
+} from "../fixtures/sqlite/provider";
+import { order, product, shop, sqliteDbSchema, user } from "../fixtures/sqlite/schemas";
+import { sqliteDbRelations } from "../fixtures/sqlite/relations";
+import { initializeSqliteTestDatabase } from "../fixtures/sqlite/setup";
 
 describe("Deno MySQL demo SQLite test provider", () => {
     it("uses a fixture schema and relations for SQLite tests", () => {

@@ -39,14 +39,16 @@ const CONFIG_BASENAMES = new Set([
     "drizzle.config.ts",
     "eslint.config.mjs",
     "package.json",
-    "playwright.config.ts",
+    "playwright.e2e.config.ts",
     "pnpm-lock.yaml",
     "pnpm-workspace.yaml",
     "tailwind.config.js",
     "tailwind.config.mjs",
     "tsconfig.json",
     "vite.config.ts",
-    "vitest.config.ts",
+    "vitest.coverage.config.ts",
+    "vitest.integration.config.ts",
+    "vitest.unit.config.ts",
     "wrangler.jsonc",
 ]);
 

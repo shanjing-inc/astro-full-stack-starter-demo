@@ -16,10 +16,21 @@ async function runVitestCoverage() {
     );
 
     return new Promise((resolve, reject) => {
-        const child = spawn(vitestBin, ["run", "--coverage", "--configLoader", "runner"], {
-            cwd: rootDir,
-            stdio: "inherit",
-        });
+        const child = spawn(
+            vitestBin,
+            [
+                "run",
+                "--coverage",
+                "--config",
+                "tests/config/vitest.coverage.config.ts",
+                "--configLoader",
+                "runner",
+            ],
+            {
+                cwd: rootDir,
+                stdio: "inherit",
+            }
+        );
 
         child.on("error", reject);
         child.on("close", (code) => resolve(code ?? 1));

@@ -4,10 +4,8 @@
         ".astro/types.d.ts",
         "astro.config.mjs",
         "drizzle.config.ts",
-        "playwright.config.ts",
         "src/**/*",
-        "tests/**/*",
-        "vitest.config.ts"
+        "tests/**/*"
     ],
     "exclude": ["dist", "node_modules"],
     "compilerOptions": {
