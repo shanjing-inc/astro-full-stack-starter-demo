@@ -2,10 +2,11 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, devices } from "@playwright/test";
 
-const rootDir = path.dirname(fileURLToPath(import.meta.url));
+const configDir = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = path.resolve(configDir, "../..");
 
 export default defineConfig({
-    testDir: path.join(rootDir, "e2e"),
+    testDir: path.join(projectRoot, "tests/e2e/specs"),
     timeout: 30_000,
     retries: process.env.CI ? 2 : 0,
     reporter: "list",
@@ -23,6 +24,7 @@ export default defineConfig({
     ],
     webServer: {
         command: "pnpm run dev --host 127.0.0.1 --port 4322",
+        cwd: projectRoot,
         url: "http://127.0.0.1:4322",
         reuseExistingServer: !process.env.CI,
         stdout: "pipe",

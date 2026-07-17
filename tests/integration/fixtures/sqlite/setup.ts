@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 import type { SqliteTestDatabase } from "./provider";
 
 const fixtureDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(fixtureDir, "../../..");
-const defaultMigrationsDir = path.resolve(fixtureDir, "../../../.tmp/sqlite-test-migrations");
+const projectRoot = path.resolve(fixtureDir, "../../../..");
+const defaultMigrationsDir = path.resolve(fixtureDir, "../../../../.tmp/sqlite-test-migrations");
 
 export default function setupSqliteTestMigrations() {
     rmSync(defaultMigrationsDir, {

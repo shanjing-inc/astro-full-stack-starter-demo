@@ -7,12 +7,9 @@ import { dbSchema, order, product, shop, user } from "@/db/schemas";
 import {
     createSqliteTestDatabase,
     createSqliteTestDatabaseProvider,
-} from "../../fixtures/sqlite/provider";
-import {
-    createShopOrderFixture,
-    createShopOrderFixtureList,
-} from "../../fixtures/sqlite/factories";
-import { initializeSqliteTestDatabase } from "../../fixtures/sqlite/setup";
+} from "../fixtures/sqlite/provider";
+import { createShopOrderFixture, createShopOrderFixtureList } from "../fixtures/sqlite/factories";
+import { initializeSqliteTestDatabase } from "../fixtures/sqlite/setup";
 
 describe("Cloudflare D1 demo SQLite test provider", () => {
     it("reuses the project schema and relations for SQLite tests", () => {

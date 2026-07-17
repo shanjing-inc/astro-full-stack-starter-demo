@@ -32,8 +32,10 @@
         "format:check": "prettier --check .",
         "format:fix": "prettier --write .",
         "sync": "astro sync",
-        "test": "vitest run --configLoader runner",
-        "test:e2e": "playwright test"
+        "test": "vitest run --config tests/config/vitest.unit.config.ts --configLoader runner && vitest run --config tests/config/vitest.integration.config.ts --configLoader runner",
+        "test:unit": "vitest run --config tests/config/vitest.unit.config.ts --configLoader runner",
+        "test:integration": "vitest run --config tests/config/vitest.integration.config.ts --configLoader runner",
+        "test:e2e": "playwright test --config tests/config/playwright.e2e.config.ts"
     },
     "lint-staged": {
         "*": "node scripts/check-staged-files.mjs"
