@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 # check=skip=SecretsUsedInArgOrEnv
-ARG BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/shanjing/node:24-bookworm-slim-pnpm11.5.0-deno2.7.12-pm26.0.14
+ARG BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/shanjing/node:24-bookworm-slim-pnpm11.5.0-deno2.9.3-pm26.0.14
 
 FROM ${BASE_IMAGE} AS build
 
