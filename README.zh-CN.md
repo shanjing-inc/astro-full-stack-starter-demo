@@ -80,7 +80,7 @@ pnpm --filter deno-mysql-demo test
 - 数据库用户
 - 数据库密码
 - 数据库名称
-- `DENO_SERVE_PARALLEL`：Docker/`start-web.sh` 启动时是否启用 `deno serve --parallel`。默认 `1`（开启）；设为 `0`/`false`/`off` 可关闭，用于降低 RSS 实验
+- `DENO_SERVE_PARALLEL`：Docker/`start-web.sh` 是否启用 `deno serve --parallel`。默认 `0`（关闭，降低 RSS）；设为 `1`/`true`/`on` 可开启多线程 serve
 
 开发密钥使用本机专属值。
 

@@ -73,7 +73,7 @@ Typical values include:
 - Database user
 - Database password
 - Database name
-- `DENO_SERVE_PARALLEL`: whether Docker/`start-web.sh` enables `deno serve --parallel`. Default `1` (on); set `0`/`false`/`off` to disable for lower-RSS experiments
+- `DENO_SERVE_PARALLEL`: whether Docker/`start-web.sh` enables `deno serve --parallel`. Default `0` (off, lower RSS); set `1`/`true`/`on` to enable multi-thread serve
 
 Use local-only values for development secrets.
 

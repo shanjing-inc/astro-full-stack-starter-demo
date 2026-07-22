@@ -74,15 +74,15 @@ is_deno_cache_required() {
 
 start_queue_daemon_if_enabled
 
-# DENO_SERVE_PARALLEL: 1/true (default) enables multi-thread serve; 0/false disables for lower RSS experiments.
-case "${DENO_SERVE_PARALLEL:-1}" in
-    0|false|FALSE|no|NO|off|OFF)
-        SERVE_PARALLEL_ARGS=""
-        echo "[start-web] DENO_SERVE_PARALLEL=${DENO_SERVE_PARALLEL:-1}; deno serve without --parallel" >&2
+# DENO_SERVE_PARALLEL: default 0/off (lower RSS). Set 1/true/on to enable multi-thread serve --parallel.
+case "${DENO_SERVE_PARALLEL:-0}" in
+    1|true|TRUE|yes|YES|on|ON)
+        SERVE_PARALLEL_ARGS="--parallel"
+        echo "[start-web] DENO_SERVE_PARALLEL=${DENO_SERVE_PARALLEL:-0}; deno serve --parallel" >&2
         ;;
     *)
-        SERVE_PARALLEL_ARGS="--parallel"
-        echo "[start-web] DENO_SERVE_PARALLEL=${DENO_SERVE_PARALLEL:-1}; deno serve --parallel" >&2
+        SERVE_PARALLEL_ARGS=""
+        echo "[start-web] DENO_SERVE_PARALLEL=${DENO_SERVE_PARALLEL:-0}; deno serve without --parallel" >&2
         ;;
 esac
 
