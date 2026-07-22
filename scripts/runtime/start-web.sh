@@ -74,7 +74,20 @@ is_deno_cache_required() {
 
 start_queue_daemon_if_enabled
 
-set -- "$DENO_BIN" serve --parallel --port="$PORT" --no-npm --node-modules-dir=none --allow-net --allow-read --allow-env
+# DENO_SERVE_PARALLEL: 1/true (default) enables multi-thread serve; 0/false disables for lower RSS experiments.
+case "${DENO_SERVE_PARALLEL:-1}" in
+    0|false|FALSE|no|NO|off|OFF)
+        SERVE_PARALLEL_ARGS=""
+        echo "[start-web] DENO_SERVE_PARALLEL=${DENO_SERVE_PARALLEL:-1}; deno serve without --parallel" >&2
+        ;;
+    *)
+        SERVE_PARALLEL_ARGS="--parallel"
+        echo "[start-web] DENO_SERVE_PARALLEL=${DENO_SERVE_PARALLEL:-1}; deno serve --parallel" >&2
+        ;;
+esac
+
+# shellcheck disable=SC2086
+set -- "$DENO_BIN" serve $SERVE_PARALLEL_ARGS --port="$PORT" --no-npm --node-modules-dir=none --allow-net --allow-read --allow-env
 
 if is_deno_cache_required; then
     set -- "$@" --cached-only
