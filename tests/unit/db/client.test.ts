@@ -12,6 +12,7 @@ const { connectionMock, createPoolMock, drizzleMock, poolMock } = vi.hoisted(() 
     }
 
     const connection = {
+        connection: { label: "physical-connection" },
         execute: createConnectionMethod("execute"),
         query: createConnectionMethod("query"),
         release: vi.fn(),

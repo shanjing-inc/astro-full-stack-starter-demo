@@ -86,8 +86,10 @@ case "${DENO_SERVE_PARALLEL:-0}" in
         ;;
 esac
 
+# Deno 2.7+: reading /proc/self/status for rssAnon/rssFile/threads requires --allow-all.
+# Plain --allow-read is rejected with NotCapable for /proc/self/* paths.
 # shellcheck disable=SC2086
-set -- "$DENO_BIN" serve $SERVE_PARALLEL_ARGS --port="$PORT" --no-npm --node-modules-dir=none --allow-net --allow-read --allow-env
+set -- "$DENO_BIN" serve $SERVE_PARALLEL_ARGS --port="$PORT" --no-npm --node-modules-dir=none --allow-all
 
 if is_deno_cache_required; then
     set -- "$@" --cached-only

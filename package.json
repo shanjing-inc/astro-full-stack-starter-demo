@@ -55,7 +55,7 @@
         "@pothos/plugin-drizzle": "^0.17.1",
         "@sentry/astro": "^10.51.0",
         "@sentry/deno": "^10.51.0",
-        "@shanjing/astro-full-stack-starter": "0.9.8",
+        "@shanjing/astro-full-stack-starter": "0.9.9",
         "better-auth": "^1.6.9",
         "bullmq": "^5.73.5",
         "class-variance-authority": "^0.7.1",

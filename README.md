@@ -74,6 +74,10 @@ Typical values include:
 - Database password
 - Database name
 - `DENO_SERVE_PARALLEL`: whether Docker/`start-web.sh` enables `deno serve --parallel`. Default `0` (off, lower RSS); set `1`/`true`/`on` to enable multi-thread serve
+- `DENO_IDLE_MEMORY_RECLAIM_*`: idle memory reclaim (off by default). Set `DENO_IDLE_MEMORY_RECLAIM_ENABLED=1` to enable; see `docs-site/guides/deno-memory.mdx`
+- Diagnostics: `GET /api/internal/runtime-memory` (`heapUsed` / `vmRss` / `rssAnon` / `rssFile` / `threads` in MB + idle reclaim state)
+- Permissions: `start-web.sh` uses `--allow-all` so Deno 2.7+ can read `/proc/self/status`
+- jemalloc: provided by **BASE_IMAGE** (`docker/base-node.Dockerfile` installs `libjemalloc2`); does **not** enable `LD_PRELOAD` by default; opt in at deploy time with `MALLOC_CONF=background_thread:true,dirty_decay_ms:5000,narenas:2`
 
 Use local-only values for development secrets.
 

@@ -1,3 +1,4 @@
+import { recordIdleMemoryBusinessActivity } from "@shanjing/astro-full-stack-starter/runtime/idle-memory-reclaim";
 import { createSseEndpointAdapter } from "@shanjing/astro-full-stack-starter/sse/adapter";
 
 import type { SseEndpointAdapterDefinition } from "@shanjing/astro-full-stack-starter/sse/adapter";
@@ -27,6 +28,7 @@ function createServerPushMessage(index: number) {
 }
 
 function createPublicSseConnection(context: SseConnectionContext, connection: SseConnection) {
+    recordIdleMemoryBusinessActivity("sse-connect");
     const timers = new Set<SseDemoTimer>();
 
     function registerTimer(timer: SseDemoTimer) {

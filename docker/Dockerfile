@@ -143,6 +143,11 @@ RUN chmod +x ./dist/deno/scripts/start-web.sh \
     && ln -sf /app/dist/deno/scripts/pre-update.sh /pre-update.sh \
     && ln -sf /app/dist/deno/scripts/post-update.sh /post-update.sh
 
+# jemalloc: provided by BASE_IMAGE (docker/base-node.Dockerfile installs libjemalloc2).
+# Do NOT enable LD_PRELOAD by default. Opt-in at deploy time:
+#   LD_PRELOAD=/usr/lib/$(uname -m)-linux-gnu/libjemalloc.so.2
+#   MALLOC_CONF=background_thread:true,dirty_decay_ms:5000,narenas:2
+
 EXPOSE 8000
 
 CMD ["./dist/deno/scripts/start-web.sh"]

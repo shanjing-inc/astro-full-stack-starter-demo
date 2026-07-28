@@ -81,6 +81,10 @@ pnpm --filter deno-mysql-demo test
 - 数据库密码
 - 数据库名称
 - `DENO_SERVE_PARALLEL`：Docker/`start-web.sh` 是否启用 `deno serve --parallel`。默认 `0`（关闭，降低 RSS）；设为 `1`/`true`/`on` 可开启多线程 serve
+- `DENO_IDLE_MEMORY_RECLAIM_*`：空闲内存回收（默认关闭）。启用时设置 `DENO_IDLE_MEMORY_RECLAIM_ENABLED=1`；详见文档 `docs-site/guides/deno-memory.mdx`
+- 诊断接口：`GET /api/internal/runtime-memory`（MB 口径的 `heapUsed` / `vmRss` / `rssAnon` / `rssFile` / `threads` + idle reclaim 状态）
+- 权限：`start-web.sh` 使用 `--allow-all`，以便 Deno 2.7+ 读取 `/proc/self/status`
+- jemalloc：由 **BASE_IMAGE**（`docker/base-node.Dockerfile`）预装 `libjemalloc2`，**默认不** `LD_PRELOAD`；部署按需开启并设置 `MALLOC_CONF=background_thread:true,dirty_decay_ms:5000,narenas:2`
 
 开发密钥使用本机专属值。
 

@@ -1,3 +1,4 @@
+import { recordIdleMemoryBusinessActivity } from "@shanjing/astro-full-stack-starter/runtime/idle-memory-reclaim";
 import { createWebSocketEndpointAdapter } from "@shanjing/astro-full-stack-starter/websocket/adapter";
 import { createWebSocketClientMessageSchema } from "@shanjing/astro-full-stack-starter/websocket/protocol/messages";
 import { serverPushDemoClientMessageSchema } from "@/websocket/features/server-push-demo";
@@ -25,6 +26,7 @@ function createPublicWebSocketHandlers(
     _context: PublicWebSocketConnectionContext,
     options: WebSocketEndpointHandlerOptions<ServerPushDemoServerMessageInput>
 ): WebSocketEndpointHandlers {
+    recordIdleMemoryBusinessActivity("websocket-connect");
     const serverPushDemoHandler = createServerPushDemoHandler(options);
 
     return {
@@ -32,6 +34,10 @@ function createPublicWebSocketHandlers(
             serverPushDemoHandler.dispose();
         },
         handleMessage(message) {
+            if (message.type !== "ping") {
+                recordIdleMemoryBusinessActivity("websocket-message");
+            }
+
             if (message.type === "serverPushDemo") {
                 serverPushDemoHandler.handle(serverPushDemoClientMessageSchema.parse(message));
                 return true;

@@ -33,8 +33,8 @@ importers:
         specifier: ^10.51.0
         version: 10.54.0
       '@shanjing/astro-full-stack-starter':
-        specifier: 0.9.8
-        version: 0.9.8(e6a73051c1b803a73b800aecdfee0d22)
+        specifier: 0.9.9
+        version: 0.9.9(e6a73051c1b803a73b800aecdfee0d22)
       better-auth:
         specifier: ^1.6.9
         version: 1.6.11(@opentelemetry/api@1.9.1)(better-sqlite3@12.10.0)(drizzle-kit@1.0.0-beta.21)(drizzle-orm@1.0.0-beta.22(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@12.10.0)(mysql2@3.22.4(@types/node@25.9.1))(valibot@1.4.1(typescript@5.9.3))(zod@4.4.3))(mysql2@3.22.4(@types/node@25.9.1))(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(vitest@4.1.7)
@@ -2981,8 +2981,8 @@ packages:
     resolution: {integrity: sha512-qcoSzo4n2MulVQ70UUPLq6dTleb2a2HwL2wuwvAgWhPChrYTuk6A6mDg6aQb9fairPAwFPiU9PzOANpoDJcz1A==}
     engines: {node: '>= 18'}
 
-  '@shanjing/astro-full-stack-starter@0.9.8':
-    resolution: {integrity: sha512-yAMyYHR0sA5HtIw7TY6xAyDV0SKqBeOsKmXfg2Lxg1PgqRx/H9ZjrazvsMB6xi8o/HdYNP5btYY9F6Z+R+Y7hA==, tarball: https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/@shanjing/astro-full-stack-starter/-/@shanjing/astro-full-stack-starter-0.9.8.tgz}
+  '@shanjing/astro-full-stack-starter@0.9.9':
+    resolution: {integrity: sha512-Gi9TV+SEDpbEGaRbfKPYG9jPewqcEemjml6xUtOeWwYxUijBrEgvfPhg6Esk4YtUXBKzz9hpR7+eqK+ZqRkSbQ==, tarball: https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/@shanjing/astro-full-stack-starter/-/@shanjing/astro-full-stack-starter-0.9.9.tgz}
     peerDependencies:
       '@apollo/client': ^4.1.9
       '@nanostores/persistent': ^1.3.3
@@ -4176,6 +4176,7 @@ packages:
 
   drizzle-orm@1.0.0-beta.22:
     resolution: {integrity: sha512-F+DZyVIvH0oVKa/w08Cle1xfoH+pc+htIXHG/frnMLG72aby9NYYr9oc+9XvghnoO4umxFItduz0OMmQJMnenw==}
+    deprecated: The 1.0.0-beta line is superseded by the 1.0 release candidate. Install drizzle-orm@rc instead.
     peerDependencies:
       '@aws-sdk/client-rds-data': '>=3'
       '@cloudflare/workers-types': '>=4'
@@ -10289,7 +10290,7 @@ snapshots:
       - rollup
       - supports-color
 
-  '@shanjing/astro-full-stack-starter@0.9.8(e6a73051c1b803a73b800aecdfee0d22)':
+  '@shanjing/astro-full-stack-starter@0.9.9(e6a73051c1b803a73b800aecdfee0d22)':
     dependencies:
       '@apollo/client': 4.2.0(graphql-ws@6.0.8(crossws@0.3.5)(graphql@16.14.0)(ws@8.21.0))(graphql@16.14.0)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)(rxjs@7.8.2)
       '@nanostores/persistent': 1.3.4(nanostores@1.3.0)

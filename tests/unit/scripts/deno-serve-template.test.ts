@@ -49,7 +49,9 @@ describe("Deno serve request origin", () => {
     it("defaults public hosts to HTTPS when proxy protocol headers are absent", () => {
         vi.stubEnv("APP_ORIGIN", "");
         const { getRequestOrigin } = loadRequestOriginHelpers();
-        const request = new Request("http://astro-template.k12.ddcampus.cn/replace-with-your-admin-path");
+        const request = new Request(
+            "http://astro-template.k12.ddcampus.cn/replace-with-your-admin-path"
+        );
 
         expect(getRequestOrigin(request)).toBe("https://astro-template.k12.ddcampus.cn");
     });
