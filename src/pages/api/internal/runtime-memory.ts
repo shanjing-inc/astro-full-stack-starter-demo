@@ -1,40 +1,19 @@
 import type { APIRoute } from "astro";
 
-import { getMysqlPool } from "@/db/client";
-import { getIdleMemoryReclaimController } from "@shanjing/astro-full-stack-starter/runtime/idle-memory-reclaim";
-import { collectRuntimeMemorySnapshot } from "@shanjing/astro-full-stack-starter/runtime/memory";
-
 export const prerender = false;
 
 /**
- * Runtime diagnostics for Deno/Web isolate memory (FEATURE-272).
- * Keep public only for temporary diagnosis; lock down in production when possible.
+ * @deprecated Prefer GET /api/rest/internal/runtime-memory.
+ * Temporary redirect so older docs/probes keep working.
  */
-export const GET: APIRoute = async () => {
-    const processEnv = (globalThis as { process?: { env?: Record<string, string | undefined> } })
-        .process?.env;
-    const snapshot = await collectRuntimeMemorySnapshot({
-        databaseUrl: import.meta.env.DATABASE_URL ?? processEnv?.DATABASE_URL,
-        getMysqlPool: () => {
-            try {
-                return getMysqlPool();
-            } catch {
-                return null;
-            }
-        },
-        role: "web",
-    });
+export const GET: APIRoute = ({ url }) => {
+    const target = new URL("/api/rest/internal/runtime-memory", url);
+    target.search = url.search;
 
-    const responseSnapshot = {
-        ...snapshot,
-        idleMemoryReclaim: getIdleMemoryReclaimController().getDiagnostics(),
-    };
-
-    return new Response(JSON.stringify(responseSnapshot, null, 2), {
+    return new Response(null, {
         headers: {
-            "cache-control": "no-store",
-            "content-type": "application/json; charset=utf-8",
+            location: `${target.pathname}${target.search}`,
         },
-        status: 200,
+        status: 308,
     });
 };
