@@ -4,6 +4,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 const configDir = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(configDir, "../..");
+const workspaceRoot = path.resolve(projectRoot, "../..");
 
 export default defineConfig({
     testDir: path.join(projectRoot, "tests/e2e/specs"),
@@ -23,13 +24,14 @@ export default defineConfig({
         },
     ],
     webServer: {
-        command: "pnpm run dev --host 127.0.0.1 --port 4321",
-        cwd: projectRoot,
+        command: "pnpm deno-mysql-demo:dev --host 127.0.0.1 --port 4321 --ignore-lock",
+        cwd: workspaceRoot,
         url: "http://127.0.0.1:4321",
         reuseExistingServer: !process.env.CI,
         stdout: "pipe",
         stderr: "pipe",
         env: {
+            ASTRO_DEV_BACKGROUND: "1",
             DATABASE_URL:
                 "mysql://root:password@127.0.0.1:3306/test_astro_with_deno?drizzleMode=default",
             REDIS_URL: "redis://127.0.0.1:6379/0",

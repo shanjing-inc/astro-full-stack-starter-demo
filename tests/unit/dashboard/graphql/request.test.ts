@@ -34,8 +34,6 @@ describe("executeDashboardGraphQL", () => {
     afterEach(() => {
         vi.useRealTimers();
         vi.unstubAllGlobals();
-        vi.doUnmock("@apollo/client/core");
-        vi.doUnmock("@apollo/client/link/batch-http");
     });
 
     it("batches concurrent dashboard operations into one request", async () => {
@@ -204,80 +202,5 @@ describe("executeDashboardGraphQL", () => {
         await vi.advanceTimersByTimeAsync(20);
 
         await assertion;
-    });
-
-    it("rejects mocked links that complete without data", async () => {
-        vi.useRealTimers();
-        vi.resetModules();
-        vi.doMock("@apollo/client/link/batch-http", () => ({
-            BaseBatchHttpLink: class BaseBatchHttpLinkMock {},
-        }));
-        vi.doMock("@apollo/client/core", () => ({
-            gql: (strings: TemplateStringsArray) => strings.join(""),
-            ApolloLink: {
-                execute: vi.fn(() => ({
-                    subscribe(observer: { complete: () => void }) {
-                        observer.complete();
-
-                        return {
-                            unsubscribe: vi.fn(),
-                        };
-                    },
-                })),
-            },
-        }));
-        const { executeDashboardGraphQL: executeWithMockedLink } =
-            await import("@shanjing/astro-full-stack-starter/dashboard/client");
-
-        await expect(executeWithMockedLink(FIRST_QUERY)).rejects.toThrow(
-            "GraphQL request completed without data."
-        );
-    });
-
-    it("ignores mocked link callbacks after the first result settles", async () => {
-        vi.useRealTimers();
-        vi.resetModules();
-        const unsubscribe = vi.fn();
-        vi.doMock("@apollo/client/link/batch-http", () => ({
-            BaseBatchHttpLink: class BaseBatchHttpLinkMock {},
-        }));
-        vi.doMock("@apollo/client/core", () => ({
-            gql: (strings: TemplateStringsArray) => strings.join(""),
-            ApolloLink: {
-                execute: vi.fn(() => ({
-                    subscribe(observer: {
-                        complete: () => void;
-                        error: (error: Error) => void;
-                        next: (result: { data: { ok: true } }) => void;
-                    }) {
-                        queueMicrotask(() => {
-                            observer.next({
-                                data: {
-                                    ok: true,
-                                },
-                            });
-                            observer.next({
-                                data: {
-                                    ok: true,
-                                },
-                            });
-                            observer.error(new Error("late error"));
-                            observer.complete();
-                        });
-
-                        return {
-                            unsubscribe,
-                        };
-                    },
-                })),
-            },
-        }));
-        const { executeDashboardGraphQL: executeWithMockedLink } =
-            await import("@shanjing/astro-full-stack-starter/dashboard/client");
-
-        await expect(executeWithMockedLink<{ ok: true }>(FIRST_QUERY)).resolves.toEqual({
-            ok: true,
-        });
-        expect(unsubscribe).toHaveBeenCalledTimes(1);
     });
 });

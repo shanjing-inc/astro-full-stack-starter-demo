@@ -12,7 +12,7 @@ export default defineConfig({
     outDir: "dist/deno",
     adapter: deno({
         start: false,
-        // 补齐 adapter 0.5.1 虚拟配置导出；start: false 下监听由 serve.mjs 接管。
+        // 补齐 adapter 0.6.0 虚拟配置导出；start: false 下监听由 serve.mjs 接管。
         hostname: undefined,
         port: undefined,
     }),

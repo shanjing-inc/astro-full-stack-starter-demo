@@ -49,4 +49,24 @@ describe("queue startup scripts", () => {
         expect(source).toContain("require(process.argv[1])");
         expect(source).toContain("pm2 startOrReload");
     });
+
+    it("ships start.sh as the QUEUE role entrypoint", () => {
+        const source = readFileSync(path.join(projectRoot, "scripts/runtime/start.sh"), "utf8");
+
+        expect(source).toContain('QUEUE_VALUE="${QUEUE:-0}"');
+        expect(source).toContain("start-web.sh");
+        expect(source).toContain("start-queue.sh");
+    });
+
+    it("prepare-deno-deploy re-syncs scripts/runtime into dist after package prepare", () => {
+        const source = readFileSync(
+            path.join(projectRoot, "scripts/prepare-deno-deploy.mjs"),
+            "utf8"
+        );
+
+        expect(source).toContain("@shanjing/astro-full-stack-starter/deploy/deno");
+        expect(source).toContain("scripts/runtime");
+        expect(source).toContain("dist/deno/scripts");
+        expect(source).toContain("start.sh");
+    });
 });
