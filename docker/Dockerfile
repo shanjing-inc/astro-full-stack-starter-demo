@@ -125,6 +125,8 @@ WORKDIR /app
 
 COPY --from=build /app/docker/deno.lock ./deno.lock
 COPY --from=build /app/dist/deno ./dist/deno
+# Runtime shell entrypoints (start.sh / start-web.sh / ...) come only from prepare-runtime
+# writing into dist/deno/scripts during `pnpm build`. Do not re-copy scripts/runtime here.
 
 RUN deno cache \
     --lock=./deno.lock \
@@ -135,12 +137,14 @@ RUN deno cache \
     ./dist/deno/queues/worker.mjs \
     ./dist/deno/queues/scheduler.mjs
 
-RUN chmod +x ./dist/deno/scripts/start-web.sh \
+RUN chmod +x ./dist/deno/scripts/start.sh \
+    ./dist/deno/scripts/start-web.sh \
     ./dist/deno/scripts/start-queue.sh \
     ./dist/deno/scripts/start-queue-daemon.sh \
     ./dist/deno/scripts/stop-queue.sh \
     ./dist/deno/scripts/pre-update.sh \
     ./dist/deno/scripts/post-update.sh \
+    && test -x ./dist/deno/scripts/start.sh \
     && ln -sf /app/dist/deno/scripts/pre-update.sh /pre-update.sh \
     && ln -sf /app/dist/deno/scripts/post-update.sh /post-update.sh
 
@@ -151,4 +155,5 @@ RUN chmod +x ./dist/deno/scripts/start-web.sh \
 
 EXPOSE 8000
 
-CMD ["./dist/deno/scripts/start.sh"]
+# Invoke via /bin/sh so Node base-image docker-entrypoint never rewrites the command to `node`.
+CMD ["/bin/sh", "/app/dist/deno/scripts/start.sh"]
