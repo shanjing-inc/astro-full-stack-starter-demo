@@ -19,7 +19,7 @@ done
 SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$SCRIPT_PATH")" && pwd)
 
 case "${QUEUE:-0}" in
-    1|true|TRUE|yes|YES|on|ON)
+    1|2|true|TRUE|yes|YES|on|ON)
         exec "$SCRIPT_DIR/stop-queue.sh"
         ;;
     *)

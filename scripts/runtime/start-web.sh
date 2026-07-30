@@ -31,18 +31,32 @@ queue_apps_running() {
     PM2_HOME="$QUEUE_PM2_HOME" pm2 jlist 2>/dev/null | grep -q 'queue-'
 }
 
+# QUEUE roles (see start.sh):
+#   0 = web only
+#   1 = queue only (if start-web is invoked directly, re-exec start-queue.sh)
+#   2 = web + queue daemon
+# Legacy true/yes/on maps to 2.
+redirect_queue_only_if_needed() {
+    case "${QUEUE:-0}" in
+        1)
+            echo "[start-web] QUEUE=1 means queue-only; re-exec start-queue.sh" >&2
+            exec "$SCRIPT_DIR/start-queue.sh"
+            ;;
+    esac
+}
+
 start_queue_daemon_if_enabled() {
     case "${QUEUE:-0}" in
-        1|true|TRUE|yes|YES|on|ON)
+        2)
             mkdir -p "$QUEUE_PM2_HOME"
-            echo "[start-web] QUEUE enabled; starting queue daemon fail-fast (timeout=${QUEUE_DAEMON_TIMEOUT_SECONDS}s, log=$QUEUE_DAEMON_LOG)" >&2
+            echo "[start-web] QUEUE=2; starting queue daemon fail-fast (timeout=${QUEUE_DAEMON_TIMEOUT_SECONDS}s, log=$QUEUE_DAEMON_LOG)" >&2
 
             set +e
             if command -v timeout >/dev/null 2>&1; then
                 timeout "$QUEUE_DAEMON_TIMEOUT_SECONDS" "$SCRIPT_DIR/start-queue-daemon.sh" >>"$QUEUE_DAEMON_LOG" 2>&1
                 daemon_status=$?
             else
-                # No timeout(1): block until daemon returns. Never fire-and-forget under QUEUE=1.
+                # No timeout(1): block until daemon returns. Never fire-and-forget under QUEUE=2.
                 "$SCRIPT_DIR/start-queue-daemon.sh" >>"$QUEUE_DAEMON_LOG" 2>&1
                 daemon_status=$?
             fi
@@ -55,6 +69,11 @@ start_queue_daemon_if_enabled() {
             fi
 
             echo "[start-web] queue daemon PM2 apps are up; starting web" >&2
+            ;;
+        true|TRUE|yes|YES|on|ON)
+            echo "[start-web] QUEUE=${QUEUE}; deprecated truthy value, treating as QUEUE=2 (web+queue). Prefer QUEUE=2." >&2
+            export QUEUE=2
+            start_queue_daemon_if_enabled
             ;;
         *)
             echo "[start-web] QUEUE=${QUEUE:-0}; skip queue daemon" >&2
@@ -72,6 +91,7 @@ is_deno_cache_required() {
     return 1
 }
 
+redirect_queue_only_if_needed
 start_queue_daemon_if_enabled
 
 # DENO_SERVE_PARALLEL: default 0/off (lower RSS). Set 1/true/on to enable multi-thread serve --parallel.

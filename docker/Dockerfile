@@ -112,6 +112,7 @@ ARG SENTRY_DIST=${USER_SENTRY_DIST}
 
 ENV NODE_ENV=production
 ENV PORT=8000
+# QUEUE roles: 0=web-only, 1=queue-only, 2=web+queue (default entry: start.sh)
 ENV QUEUE=0
 ENV QUEUE_PM2_HOME=/app/.pm2-queue
 ENV PM2_HOME=/app/.pm2-queue
@@ -150,4 +151,4 @@ RUN chmod +x ./dist/deno/scripts/start-web.sh \
 
 EXPOSE 8000
 
-CMD ["./dist/deno/scripts/start-web.sh"]
+CMD ["./dist/deno/scripts/start.sh"]
