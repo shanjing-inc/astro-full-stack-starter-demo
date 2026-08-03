@@ -3,7 +3,9 @@ packages:
 
 allowBuilds:
     "@sentry/cli": true
-    better-sqlite3: true
+    # 测试用 devDependency；独立 demo 镜像 / slim CI 无 Python。
+    # monorepo 根目录仍允许构建（本地/测试）；独立仓镜像构建必须关掉。
+    better-sqlite3: false
     esbuild: true
     msgpackr-extract: true
     msw: true
