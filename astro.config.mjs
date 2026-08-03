@@ -88,6 +88,10 @@ export default defineConfig({
         }),
     ],
     vite: {
+        optimizeDeps: {
+            // Cloudflare Worker runner 需要预打包 Astro React renderer 使用的 CommonJS picomatch。
+            include: ["picomatch"],
+        },
         server: {
             fs: {
                 allow: ["../.."],
