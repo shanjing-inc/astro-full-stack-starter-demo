@@ -4,7 +4,6 @@ generates:
         documents:
             - "./src/dashboards/admin/**/*.{ts,tsx}"
         plugins:
-            - typescript
             - typescript-operations
         config:
             scalars:
@@ -16,7 +15,6 @@ generates:
         documents:
             - "./src/dashboards/member/**/*.{ts,tsx}"
         plugins:
-            - typescript
             - typescript-operations
         config:
             scalars:

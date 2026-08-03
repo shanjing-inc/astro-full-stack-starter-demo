@@ -595,8 +595,15 @@ function readRuntimeEnv(name: string) {
     return runtimeGlobal.Deno?.env?.get(name) ?? process.env[name];
 }
 
-function createMysqlConnectionUri(databaseUrl: string) {
+export function createMysqlConnectionUri(databaseUrl: string) {
     const url = new URL(databaseUrl);
+    const drizzleMode = url.searchParams.get("drizzleMode");
+
+    if (drizzleMode !== null && drizzleMode !== "" && drizzleMode !== "default") {
+        throw new MigrationRunnerError(
+            `DATABASE_URL MySQL query parameter drizzleMode=${drizzleMode} is no longer supported. Remove drizzleMode from DATABASE_URL.`
+        );
+    }
 
     for (const option of mysqlPoolQueryOptions) {
         url.searchParams.delete(option);

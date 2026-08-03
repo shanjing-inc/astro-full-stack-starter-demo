@@ -32,8 +32,7 @@ export default defineConfig({
         stderr: "pipe",
         env: {
             ASTRO_DEV_BACKGROUND: "1",
-            DATABASE_URL:
-                "mysql://root:password@127.0.0.1:3306/test_astro_with_deno?drizzleMode=default",
+            DATABASE_URL: "mysql://root:password@127.0.0.1:3306/test_astro_with_deno",
             REDIS_URL: "redis://127.0.0.1:6379/0",
             TZ: "UTC",
         },

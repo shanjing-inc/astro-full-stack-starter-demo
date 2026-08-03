@@ -18,11 +18,11 @@ export default function setupSqliteTestMigrations() {
         recursive: true,
     });
 
+    const drizzleKitBin = path.join(projectRoot, "node_modules", ".bin", "drizzle-kit");
+
     execFileSync(
-        "pnpm",
+        drizzleKitBin,
         [
-            "exec",
-            "drizzle-kit",
             "generate",
             "--dialect",
             "sqlite",

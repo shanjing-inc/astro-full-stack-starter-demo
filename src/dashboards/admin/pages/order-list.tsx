@@ -28,6 +28,8 @@ import {
     type DataTableColumn,
 } from "@shanjing/astro-full-stack-starter/dashboard/client";
 
+import type { DateTimeFilters } from "@shanjing/astro-full-stack-starter/graphql/generated/dashboard";
+
 import type {
     ListAdminOrdersQuery,
     ListAdminOrdersQueryVariables,
@@ -298,15 +300,17 @@ function buildOrderFilters(
     }
 
     if (parsedCreatedAtFrom || parsedCreatedAtTo) {
-        where.createdAt = {};
+        const createdAt: DateTimeFilters = {};
 
         if (parsedCreatedAtFrom) {
-            where.createdAt.gte = serializeDateFilter(parsedCreatedAtFrom);
+            createdAt.gte = serializeDateFilter(parsedCreatedAtFrom);
         }
 
         if (parsedCreatedAtTo) {
-            where.createdAt.lt = serializeDateFilter(parsedCreatedAtTo);
+            createdAt.lt = serializeDateFilter(parsedCreatedAtTo);
         }
+
+        where.createdAt = createdAt;
     }
 
     return Object.keys(where).length > 0 ? where : undefined;

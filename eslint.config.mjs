@@ -34,6 +34,13 @@ export default [
     ...tseslint.configs.recommended,
     ...eslintPluginAstro.configs["flat/recommended"],
     {
+        languageOptions: {
+            parserOptions: {
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
+    },
+    {
         files: ["public/**/*.*", "src/content/**/*.*", "src/styles/**/*.css"],
         plugins: {
             "check-file": checkFile,

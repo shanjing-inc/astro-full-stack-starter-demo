@@ -26,7 +26,7 @@ const { connectionMock, createPoolMock, drizzleMock, poolMock } = vi.hoisted(() 
     return {
         connectionMock: connection,
         createPoolMock: vi.fn(() => pool),
-        drizzleMock: vi.fn(() => "drizzle-db"),
+        drizzleMock: vi.fn((..._args: unknown[]) => "drizzle-db"),
         poolMock: pool,
     };
 });
@@ -63,8 +63,7 @@ describe("database client runtime config", () => {
             "DATABASE_URL",
             [
                 "mysql://user:pass@127.0.0.1:3306/app",
-                "?drizzleMode=planetscale",
-                "&connectionLimit=30",
+                "?connectionLimit=30",
                 "&maxIdle=20",
                 "&idleTimeout=7000",
                 "&queueLimit=200",
@@ -88,18 +87,26 @@ describe("database client runtime config", () => {
             maxIdle: 20,
             queueLimit: 200,
             resetOnRelease: true,
+            supportBigNumbers: true,
             timezone: "Z",
             uri: "mysql://user:pass@127.0.0.1:3306/app?charset=utf8mb4",
             waitForConnections: false,
         });
+        // drizzle-orm 1.0 RC mysql2 driver is relations-first; mode is no longer consumed.
         expect(drizzleMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                mode: "planetscale",
+                client: poolMock,
+                relations: expect.anything(),
             })
         );
+        const drizzleConfig = drizzleMock.mock.calls.at(0)?.[0] as
+            Record<string, unknown> | undefined;
+        expect(drizzleConfig).toBeDefined();
+        expect(drizzleConfig).not.toHaveProperty("mode");
+        expect(drizzleConfig).not.toHaveProperty("schema");
     });
 
-    it("uses the default mysql drizzle mode when DATABASE_URL omits drizzleMode", async () => {
+    it("creates drizzle without mode when DATABASE_URL omits drizzleMode", async () => {
         vi.stubEnv("TZ", "UTC");
         vi.stubEnv(
             "DATABASE_URL",
@@ -129,15 +136,22 @@ describe("database client runtime config", () => {
             maxIdle: 20,
             queueLimit: 200,
             resetOnRelease: true,
+            supportBigNumbers: true,
             timezone: "Z",
             uri: "mysql://user:pass@127.0.0.1:3306/app?charset=utf8mb4",
             waitForConnections: false,
         });
         expect(drizzleMock).toHaveBeenCalledWith(
             expect.objectContaining({
-                mode: "default",
+                client: poolMock,
+                relations: expect.anything(),
             })
         );
+        const drizzleConfig = drizzleMock.mock.calls.at(0)?.[0] as
+            Record<string, unknown> | undefined;
+        expect(drizzleConfig).toBeDefined();
+        expect(drizzleConfig).not.toHaveProperty("mode");
+        expect(drizzleConfig).not.toHaveProperty("schema");
     });
 
     it("rejects invalid mysql pool query parameters", async () => {
@@ -150,13 +164,13 @@ describe("database client runtime config", () => {
         );
     });
 
-    it("rejects invalid mysql drizzle modes from DATABASE_URL", async () => {
-        vi.stubEnv("DATABASE_URL", "mysql://user:pass@127.0.0.1:3306/app?drizzleMode=other");
+    it("rejects the removed PlanetScale drizzle mode", async () => {
+        vi.stubEnv("DATABASE_URL", "mysql://user:pass@127.0.0.1:3306/app?drizzleMode=planetscale");
 
         const { getMysqlPool } = await import("@/db/client");
 
         expect(() => getMysqlPool()).toThrow(
-            "DATABASE_URL MySQL query parameter drizzleMode must be default or planetscale."
+            "DATABASE_URL MySQL query parameter drizzleMode=planetscale is no longer supported. Remove drizzleMode from DATABASE_URL."
         );
     });
 
@@ -213,6 +227,7 @@ describe("database client runtime config", () => {
 
         expect(createPoolMock).toHaveBeenCalledWith({
             dateStrings: ["DATETIME", "TIMESTAMP"],
+            supportBigNumbers: true,
             timezone: "local",
             uri: "mysql://user:pass@127.0.0.1:3306/app?charset=utf8mb4",
         });

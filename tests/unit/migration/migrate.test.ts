@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import {
     createDatabaseTargetSummary,
+    createMysqlConnectionUri,
     getPendingMigrations,
     readMigrationFiles,
     runMigrationPlan,
@@ -136,6 +137,24 @@ describe("Deno MySQL migration runner", () => {
             "CREATE TABLE first_table (id serial PRIMARY KEY);\n",
             "\nCREATE INDEX first_table_id_idx ON first_table (id);",
         ]);
+    });
+
+    it("strips legacy default drizzleMode and mysql pool options from migration URLs", () => {
+        expect(
+            createMysqlConnectionUri(
+                "mysql://user:secret@127.0.0.1:3306/app?drizzleMode=default&connectionLimit=10&ssl=1"
+            )
+        ).toBe("mysql://user:secret@127.0.0.1:3306/app?ssl=1");
+    });
+
+    it("rejects the removed PlanetScale drizzle mode in migration URLs", () => {
+        expect(() =>
+            createMysqlConnectionUri(
+                "mysql://user:secret@127.0.0.1:3306/app?drizzleMode=planetscale"
+            )
+        ).toThrow(
+            "DATABASE_URL MySQL query parameter drizzleMode=planetscale is no longer supported. Remove drizzleMode from DATABASE_URL."
+        );
     });
 
     it("masks DATABASE_URL username and password in target summaries", () => {
