@@ -11,6 +11,8 @@ COPY . .
 ARG NPM_REGISTRY_URL=https://packages.aliyun.com/5eb77c7538076f00011bd238/npm/npm-registry/
 ARG NPM_REGISTRY_AUTH_TOKEN
 
+# better-sqlite3 仅为测试用 devDependency；镜像构建不需要其 native 二进制。
+# package.json 的 pnpm.neverBuiltDependencies 跳过它的 node-gyp（slim 镜像无 Python）。
 RUN set -eu; \
     _NPM_REGISTRY_URL="${NPM_REGISTRY_URL:-}"; \
     _NPM_REGISTRY_AUTH_TOKEN="${NPM_REGISTRY_AUTH_TOKEN:-}"; \
