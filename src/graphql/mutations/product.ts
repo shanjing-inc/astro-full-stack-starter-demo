@@ -37,7 +37,7 @@ export function registerCreateProductMutation(builder: PothosBuilder, productTyp
                 }
 
                 const record = await context.db.query.product.findFirst({
-                    ...query,
+                    ...query(),
                     where: {
                         id: createdRecord.id,
                     },
@@ -81,7 +81,7 @@ export function registerDeleteProductMutation(builder: PothosBuilder, productTyp
                 }
 
                 const records = await context.db.query.product.findMany({
-                    ...query,
+                    ...query(),
                     where: relationWhere as never,
                 });
 
@@ -134,7 +134,7 @@ export function registerUpdateProductMutation(builder: PothosBuilder, productTyp
                 const updatedRecords = await Promise.all(
                     matchedRows.map((row) =>
                         context.db.query.product.findFirst({
-                            ...query,
+                            ...query(),
                             where: {
                                 id: row.id,
                             },

@@ -26,6 +26,9 @@ importers:
       '@pothos/core':
         specifier: ^4.13.1
         version: 4.13.1(graphql@17.0.2)
+      '@pothos/plugin-dataloader':
+        specifier: ^4.4.5
+        version: 4.4.5(@pothos/core@4.13.1(graphql@17.0.2))(dataloader@2.2.3)(graphql@17.0.2)
       '@pothos/plugin-drizzle':
         specifier: ^0.17.5
         version: 0.17.5(@pothos/core@4.13.1(graphql@17.0.2))(drizzle-orm@1.0.0-rc.4(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@13.0.1)(valibot@1.4.2(@typescript/typescript6@6.0.2))(zod@4.4.3))(graphql@17.0.2)
@@ -47,6 +50,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      dataloader:
+        specifier: ^2.2.3
+        version: 2.2.3
       drizzle-orm:
         specifier: 1.0.0-rc.4
         version: 1.0.0-rc.4(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@13.0.1)(valibot@1.4.2(@typescript/typescript6@6.0.2))(zod@4.4.3)
@@ -1834,6 +1840,13 @@ packages:
   '@pothos/core@4.13.1':
     resolution: {integrity: sha512-2hkLxmvrT7VnbiWAfYhfF09PjaHeflZ5HrBHYzU6Tn/P9tDviuZS7IS5xO4k/KnK5GkRo3YxDzXyn+HnkEkVNw==}
     peerDependencies:
+      graphql: ^16.10.0 || ^17.0.0
+
+  '@pothos/plugin-dataloader@4.4.5':
+    resolution: {integrity: sha512-G4vM+2ddLu7GkrklQLHgV1uLRKRpwaiGK4K+ggA+DG1kNL//rkG1ManKZJUYEqdh2GmVdcReQr8TSaTZMYPx6A==}
+    peerDependencies:
+      '@pothos/core': '*'
+      dataloader: '2'
       graphql: ^16.10.0 || ^17.0.0
 
   '@pothos/plugin-drizzle@0.17.5':
@@ -8286,6 +8299,12 @@ snapshots:
 
   '@pothos/core@4.13.1(graphql@17.0.2)':
     dependencies:
+      graphql: 17.0.2
+
+  '@pothos/plugin-dataloader@4.4.5(@pothos/core@4.13.1(graphql@17.0.2))(dataloader@2.2.3)(graphql@17.0.2)':
+    dependencies:
+      '@pothos/core': 4.13.1(graphql@17.0.2)
+      dataloader: 2.2.3
       graphql: 17.0.2
 
   '@pothos/plugin-drizzle@0.17.5(@pothos/core@4.13.1(graphql@17.0.2))(drizzle-orm@1.0.0-rc.4(@opentelemetry/api@1.9.1)(@types/better-sqlite3@7.6.13)(@types/pg@8.20.0)(better-sqlite3@13.0.1)(valibot@1.4.2(@typescript/typescript6@6.0.2))(zod@4.4.3))(graphql@17.0.2)':

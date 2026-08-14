@@ -1,5 +1,4 @@
 import { createCloudflareD1DatabaseProvider, getCloudflareD1Env } from "@/db/client";
-import { createGraphQLLoaders } from "@/graphql/loaders";
 import { getAuth } from "@/lib/auth";
 import { createQueueExecutionStore, createQueueRuntime } from "@/queues/runtime";
 
@@ -7,10 +6,11 @@ import type {
     DashboardCreateUserInput,
     DashboardCreateUserResult,
 } from "@shanjing/astro-full-stack-starter/graphql/schemas/dashboard";
+import type { GraphQLRequestContextCache } from "@shanjing/astro-full-stack-starter/graphql/cache/request";
 
 type DashboardAuthRole = "admin" | "member" | "owner" | "user";
 
-export async function createGraphQLContext(request: Request) {
+export async function createGraphQLContext(request: Request, cache: GraphQLRequestContextCache) {
     const env = getCloudflareD1Env();
     const provider = createCloudflareD1DatabaseProvider(env);
     const auth = getAuth();
@@ -19,6 +19,7 @@ export async function createGraphQLContext(request: Request) {
     });
 
     return {
+        ...cache,
         createDashboardUser: async (
             input: DashboardCreateUserInput
         ): Promise<DashboardCreateUserResult> => {
@@ -37,7 +38,6 @@ export async function createGraphQLContext(request: Request) {
             };
         },
         db: provider.getDb(),
-        loaders: createGraphQLLoaders(provider.getDb()),
         queueExecutionStore: createQueueExecutionStore(env),
         queueRuntime: createQueueRuntime(env),
         request,

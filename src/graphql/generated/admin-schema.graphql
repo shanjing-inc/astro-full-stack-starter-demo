@@ -137,6 +137,7 @@ type ProductItem {
     id: ID
     inventoryCount: Int
     name: String
+    orderCount: Int!
     orders: [OrderItem!]
     priceInCents: Int
     shop: ShopItem

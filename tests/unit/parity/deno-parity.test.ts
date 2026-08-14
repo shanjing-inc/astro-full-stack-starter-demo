@@ -2,6 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { buildSchema, isObjectType } from "graphql";
 import { describe, expect, it } from "vitest";
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -17,6 +18,18 @@ function readWorkspaceFile(relativePath: string) {
 
 function expectProjectFile(relativePath: string) {
     expect(existsSync(path.join(rootDir, relativePath)), `${relativePath} should exist`).toBe(true);
+}
+
+function getProductFieldSignatures(schemaSource: string) {
+    const productItem = buildSchema(schemaSource).getType("ProductItem");
+
+    expect(isObjectType(productItem)).toBe(true);
+
+    if (!isObjectType(productItem)) {
+        return [];
+    }
+
+    return Object.values(productItem.getFields()).map((field) => `${field.name}: ${field.type}`);
 }
 
 describe("Cloudflare demo parity with Deno demo", () => {
@@ -105,15 +118,52 @@ describe("Cloudflare demo parity with Deno demo", () => {
         expect(graphqlPage).toContain("ListUsers");
     });
 
-    it("injects GraphQL loaders into the request context", () => {
+    it("shares the starter Request cache and removes the legacy loader wiring", () => {
         const contextFile = readProjectFile("src/graphql/context.ts");
+        const adminAdapter = readProjectFile("src/graphql/adapters/admin.ts");
+        const memberAdapter = readProjectFile("src/graphql/adapters/member.ts");
+        const productTypeFile = readProjectFile("src/graphql/types/product.ts");
 
-        expectProjectFile("src/graphql/loaders/index.ts");
-        expectProjectFile("src/graphql/loaders/shop.ts");
-        expectProjectFile("src/graphql/loaders/product.ts");
-        expectProjectFile("src/graphql/loaders/order.ts");
-        expect(contextFile).toContain('import { createGraphQLLoaders } from "@/graphql/loaders";');
-        expect(contextFile).toContain("loaders: createGraphQLLoaders");
+        expect(existsSync(path.join(rootDir, "src/graphql/loaders"))).toBe(false);
+        expect(adminAdapter).toContain("createGraphQLRequestContextCache()");
+        expect(adminAdapter).toContain("getRequestContextCache(request)");
+        expect(memberAdapter).toContain("createGraphQLRequestContextCache()");
+        expect(memberAdapter).toContain("getRequestContextCache(request)");
+        expect(contextFile).toContain("...cache");
+        expect(contextFile).not.toContain("loaders:");
+        expect(productTypeFile).toContain("orderCount: t.loadable({");
+        expect(productTypeFile).toContain('type: "Int"');
+    });
+
+    it("keeps generated ProductItem field order and nullability aligned with Deno", () => {
+        const expectedProductFields = [
+            "createdAt: DateTime",
+            "id: ID",
+            "inventoryCount: Int",
+            "name: String",
+            "orderCount: Int!",
+            "orders: [OrderItem!]",
+            "priceInCents: Int",
+            "shop: ShopItem",
+            "shopId: Int",
+            "sku: String",
+            "status: String",
+            "updatedAt: DateTime",
+        ];
+        const generatedSchemas = [
+            readProjectFile("src/graphql/generated/admin-schema.graphql"),
+            readProjectFile("src/graphql/generated/member-schema.graphql"),
+            readWorkspaceFile(
+                "projects/deno-mysql-demo/src/graphql/generated/admin-schema.graphql"
+            ),
+            readWorkspaceFile(
+                "projects/deno-mysql-demo/src/graphql/generated/member-schema.graphql"
+            ),
+        ];
+
+        for (const schemaSource of generatedSchemas) {
+            expect(getProductFieldSignatures(schemaSource)).toEqual(expectedProductFields);
+        }
     });
 
     it("keeps the admin dashboard home route in navigation", () => {

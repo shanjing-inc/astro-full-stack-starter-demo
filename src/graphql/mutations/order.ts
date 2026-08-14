@@ -109,7 +109,7 @@ export function registerCreateOrderMutation(builder: PothosBuilder, orderTypes: 
                 }
 
                 const record = await context.db.query.order.findFirst({
-                    ...query,
+                    ...query(),
                     where: {
                         id: createdRecord.id,
                     },
@@ -153,7 +153,7 @@ export function registerDeleteOrderMutation(builder: PothosBuilder, orderTypes: 
                 }
 
                 const records = await context.db.query.order.findMany({
-                    ...query,
+                    ...query(),
                     where: relationWhere as never,
                 });
 
@@ -215,7 +215,7 @@ export function registerUpdateOrderMutation(builder: PothosBuilder, orderTypes: 
                 const updatedRecords = await Promise.all(
                     matchedRows.map((row) =>
                         context.db.query.order.findFirst({
-                            ...query,
+                            ...query(),
                             where: {
                                 id: row.id,
                             },
