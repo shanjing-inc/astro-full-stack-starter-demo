@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { and } from "drizzle-orm";
+import { and, count, inArray } from "drizzle-orm";
 import { createInsertSchema, createUpdateSchema } from "drizzle-zod";
 
-import { product } from "@/db/schemas";
+import { order, product } from "@/db/schemas";
 import {
     buildIntFilterConditions,
     buildRelationIntFilters,
@@ -19,6 +19,7 @@ import {
 } from "@shanjing/astro-full-stack-starter/graphql/types/common";
 
 import type { PothosBuilder } from "@/graphql/builder";
+import type { GraphQLContext } from "@/graphql/context";
 import type { Product } from "@/db/schemas";
 import type {
     CommonTypes,
@@ -203,26 +204,58 @@ export function registerProductTypes(builder: PothosBuilder, commonTypes: Common
             }),
         });
 
-    const productItem = builder.drizzleObject<[], "product", true, Product>("product", {
-        name: "ProductItem",
-        fields: (t) => ({
-            id: t.exposeID("id"),
-            shopId: t.exposeInt("shopId"),
-            name: t.exposeString("name"),
-            sku: t.exposeString("sku"),
-            priceInCents: t.exposeInt("priceInCents"),
-            inventoryCount: t.exposeInt("inventoryCount"),
-            status: t.exposeString("status"),
-            createdAt: t.expose("createdAt", {
-                type: commonTypes.dateTime,
+    const productItem = builder.drizzleObject<[], "product", { columns: { id: true } }, Product>(
+        "product",
+        {
+            name: "ProductItem",
+            select: {
+                columns: {
+                    id: true,
+                },
+            },
+            fields: (t) => ({
+                id: t.exposeID("id"),
+                shopId: t.exposeInt("shopId"),
+                name: t.exposeString("name"),
+                sku: t.exposeString("sku"),
+                priceInCents: t.exposeInt("priceInCents"),
+                inventoryCount: t.exposeInt("inventoryCount"),
+                status: t.exposeString("status"),
+                createdAt: t.expose("createdAt", {
+                    type: commonTypes.dateTime,
+                }),
+                updatedAt: t.expose("updatedAt", {
+                    type: commonTypes.dateTime,
+                }),
+                orderCount: t.loadable({
+                    type: "Int",
+                    nullable: false,
+                    load: async (productIds: readonly number[], context: GraphQLContext) => {
+                        if (productIds.length === 0) {
+                            return [];
+                        }
+
+                        const rows = await context.db
+                            .select({
+                                orderCount: count(order.id),
+                                productId: order.productId,
+                            })
+                            .from(order)
+                            .where(inArray(order.productId, [...productIds]))
+                            .groupBy(order.productId);
+                        const countsByProductId = new Map(
+                            rows.map((row) => [row.productId, Number(row.orderCount)] as const)
+                        );
+
+                        return productIds.map((productId) => countsByProductId.get(productId) ?? 0);
+                    },
+                    resolve: (productRecord) => productRecord.id,
+                }),
+                shop: t.relation("shop"),
+                orders: t.relation("orders"),
             }),
-            updatedAt: t.expose("updatedAt", {
-                type: commonTypes.dateTime,
-            }),
-            shop: t.relation("shop"),
-            orders: t.relation("orders"),
-        }),
-    });
+        }
+    );
 
     return {
         createProductSetInput,

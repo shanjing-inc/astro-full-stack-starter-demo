@@ -36,7 +36,7 @@ export function registerCreateShopMutation(builder: PothosBuilder, shopTypes: Sh
                 }
 
                 const record = await context.db.query.shop.findFirst({
-                    ...query,
+                    ...query(),
                     where: {
                         id: createdRecord.id,
                     },
@@ -80,7 +80,7 @@ export function registerDeleteShopMutation(builder: PothosBuilder, shopTypes: Sh
                 }
 
                 const records = await context.db.query.shop.findMany({
-                    ...query,
+                    ...query(),
                     where: relationWhere as never,
                 });
 
@@ -133,7 +133,7 @@ export function registerUpdateShopMutation(builder: PothosBuilder, shopTypes: Sh
                 const updatedRecords = await Promise.all(
                     matchedRows.map((row) =>
                         context.db.query.shop.findFirst({
-                            ...query,
+                            ...query(),
                             where: {
                                 id: row.id,
                             },

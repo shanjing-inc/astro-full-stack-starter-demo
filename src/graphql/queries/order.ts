@@ -24,7 +24,7 @@ export function registerGetOrderQuery(builder: PothosBuilder, orderTypes: OrderT
                 const relationWhere = buildOrderRelationWhere(parsedWhere);
 
                 return context.db.query.order.findFirst({
-                    ...query,
+                    ...query(),
                     where: relationWhere as never,
                 });
             },
@@ -51,7 +51,7 @@ export function registerListOrdersQuery(builder: PothosBuilder, orderTypes: Orde
                 const relationWhere = buildOrderRelationWhere(parsedArgs.where);
 
                 return context.db.query.order.findMany({
-                    ...query,
+                    ...query(),
                     limit: parsedArgs.limit,
                     offset: parsedArgs.offset,
                     orderBy: buildOrderOrderBy(parsedArgs.orderBy),

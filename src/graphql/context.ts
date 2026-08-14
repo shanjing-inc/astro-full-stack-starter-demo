@@ -1,27 +1,28 @@
 import { databaseProvider } from "@/db/client";
-import { createGraphQLLoaders } from "@/graphql/loaders";
 import { getAuth } from "@/lib/auth";
 
 import type { Database } from "@/db/client";
-import type { GraphQLLoaders } from "@/graphql/loaders";
 import type {
     DashboardCreateUserInput,
     DashboardCreateUserResult,
 } from "@shanjing/astro-full-stack-starter/graphql/schemas/dashboard";
+import type { GraphQLRequestContextCache } from "@shanjing/astro-full-stack-starter/graphql/cache/request";
 
 type AuthSession = ReturnType<typeof getAuth>["$Infer"]["Session"];
 type DashboardAuthRole = "admin" | "member" | "owner" | "user";
 
-export interface GraphQLContext {
+export type GraphQLContext = GraphQLRequestContextCache & {
     db: Database;
-    loaders: GraphQLLoaders;
     request: Request;
     session: AuthSession["session"] | null;
     sessionUser: AuthSession["user"] | null;
     createDashboardUser(input: DashboardCreateUserInput): Promise<DashboardCreateUserResult>;
-}
+};
 
-export async function createGraphQLContext(request: Request): Promise<GraphQLContext> {
+export async function createGraphQLContext(
+    request: Request,
+    cache: GraphQLRequestContextCache
+): Promise<GraphQLContext> {
     const db = databaseProvider.getDb();
     const auth = getAuth();
     const session = await auth.api.getSession({
@@ -29,6 +30,7 @@ export async function createGraphQLContext(request: Request): Promise<GraphQLCon
     });
 
     return {
+        ...cache,
         createDashboardUser: async (input) => {
             const response = await auth.api.createUser({
                 body: {
@@ -45,7 +47,6 @@ export async function createGraphQLContext(request: Request): Promise<GraphQLCon
             };
         },
         db,
-        loaders: createGraphQLLoaders(db),
         request,
         session: session?.session ?? null,
         sessionUser: session?.user ?? null,

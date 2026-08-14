@@ -24,7 +24,7 @@ export function registerGetProductQuery(builder: PothosBuilder, productTypes: Pr
                 const relationWhere = buildProductRelationWhere(parsedWhere);
 
                 return context.db.query.product.findFirst({
-                    ...query,
+                    ...query(),
                     where: relationWhere as never,
                 });
             },
@@ -51,7 +51,7 @@ export function registerListProductsQuery(builder: PothosBuilder, productTypes: 
                 const relationWhere = buildProductRelationWhere(parsedArgs.where);
 
                 return context.db.query.product.findMany({
-                    ...query,
+                    ...query(),
                     limit: parsedArgs.limit,
                     offset: parsedArgs.offset,
                     orderBy: buildProductOrderBy(parsedArgs.orderBy),

@@ -24,7 +24,7 @@ export function registerGetShopQuery(builder: PothosBuilder, shopTypes: ShopType
                 const relationWhere = buildShopRelationWhere(parsedWhere);
 
                 return context.db.query.shop.findFirst({
-                    ...query,
+                    ...query(),
                     where: relationWhere as never,
                 });
             },
@@ -51,7 +51,7 @@ export function registerListShopsQuery(builder: PothosBuilder, shopTypes: ShopTy
                 const relationWhere = buildShopRelationWhere(parsedArgs.where);
 
                 return context.db.query.shop.findMany({
-                    ...query,
+                    ...query(),
                     limit: parsedArgs.limit,
                     offset: parsedArgs.offset,
                     orderBy: buildShopOrderBy(parsedArgs.orderBy),
