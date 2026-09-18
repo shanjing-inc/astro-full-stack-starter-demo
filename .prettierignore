@@ -1,6 +1,7 @@
 .husky/**
 .astro/**
 .tmp/**
+AGENTS.md
 coverage/**
 dist/**
 drizzle/**
