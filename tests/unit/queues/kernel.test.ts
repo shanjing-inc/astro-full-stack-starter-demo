@@ -34,7 +34,7 @@ describe("queue kernel", () => {
         expect(schedules.map((schedule) => schedule.cron)).toEqual([
             "*/10 * * * *",
             "0 * * * *",
-            "30 4 * * *",
+            "*/10 * * * *",
             "*/15 * * * *",
             "0 8 * * *",
             "0 8 * * *",

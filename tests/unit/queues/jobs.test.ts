@@ -238,43 +238,16 @@ describe("queue jobs", () => {
         );
     });
 
-    it("cleans old execution records through the queue redis connection", async () => {
-        pruneExecutionRecordsMock.mockResolvedValue({
-            failed: 1,
-            completed: 2,
-            totalDeleted: 3,
-        });
+    it("dispatches the public cleanup job with scheduler defaults", async () => {
         const job = new ExecutionRecordCleanupQueueJob();
-
-        await expect(
-            job.handle({
-                data: {
-                    maxAgeHours: 12,
-                    maxRecordsPerStatus: 20,
-                    requestedAt: "2026-05-07T00:00:00.000Z",
-                    source: "manual",
-                },
-            })
-        ).resolves.toEqual({
-            cutoffTimestamp: expect.any(Number),
-            maxAgeHours: 12,
-            maxRecordsPerStatus: 20,
-            requestedAt: "2026-05-07T00:00:00.000Z",
-            source: "manual",
-            summary: {
-                deletedByStatus: {
-                    completed: 0,
-                    failed: 0,
-                },
-                totalDeleted: 0,
-            },
-        });
-        expect(createQueueRedisConnectionMock).toHaveBeenCalled();
-
         await job.dispatch(queueRuntime, undefined, createScheduleDispatchMeta());
         expect(dispatchJobMock).toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({
+                maxAgeHours: 168,
+                maxRecordsPerStatus: 100,
+                maxCandidates: 1000,
+                maxDurationMs: 5000,
                 source: "scheduler",
             }),
             expect.anything()
@@ -420,14 +393,6 @@ describe("queue jobs", () => {
         await executionRecordCleanupJob.dispatch(queueRuntime);
         await failedJobsAuditJob.dispatch(queueRuntime);
         await queueMetricsSnapshotJob.dispatch(queueRuntime);
-        await executionRecordCleanupJob.handle({
-            data: {
-                maxAgeHours: 1,
-                maxRecordsPerStatus: 1,
-                requestedAt: "2026-05-07T00:00:00.000Z",
-                source: "manual",
-            },
-        });
         getExecutionRecordsByStatusMock.mockResolvedValue([]);
         await expect(
             failedJobsAuditJob.handle({

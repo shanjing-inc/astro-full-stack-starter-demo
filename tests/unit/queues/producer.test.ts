@@ -1,14 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { z } from "zod";
 
-const { queueAddMock, queueConstructorMock, redisConstructorMock, redisMultiExecMock } = vi.hoisted(
-    () => ({
-        queueAddMock: vi.fn(),
-        queueConstructorMock: vi.fn(),
-        redisConstructorMock: vi.fn(),
-        redisMultiExecMock: vi.fn(async () => []),
-    })
-);
+const {
+    queueAddMock,
+    queueGetJobMock,
+    queueConstructorMock,
+    redisConstructorMock,
+    redisMultiExecMock,
+    redisEvalMock,
+} = vi.hoisted(() => ({
+    queueAddMock: vi.fn(),
+    queueGetJobMock: vi.fn(async () => null),
+    queueConstructorMock: vi.fn(),
+    redisConstructorMock: vi.fn(),
+    redisMultiExecMock: vi.fn(async () => []),
+    redisEvalMock: vi.fn(async () => 1),
+}));
 
 vi.mock("bullmq", () => {
     class QueueMock {
@@ -17,6 +24,7 @@ vi.mock("bullmq", () => {
         }
 
         add = queueAddMock;
+        getJob = queueGetJobMock;
     }
 
     return {
@@ -26,6 +34,7 @@ vi.mock("bullmq", () => {
 
 vi.mock("ioredis", () => {
     class RedisMock {
+        eval = redisEvalMock;
         constructor(url: string, options: unknown) {
             redisConstructorMock(url, options);
         }
@@ -88,10 +97,14 @@ describe("job producer", () => {
     beforeEach(() => {
         vi.resetModules();
         queueAddMock.mockReset();
+        queueGetJobMock.mockReset();
+        queueGetJobMock.mockResolvedValue(null);
         queueConstructorMock.mockReset();
         redisConstructorMock.mockReset();
         redisMultiExecMock.mockReset();
         redisMultiExecMock.mockResolvedValue([]);
+        redisEvalMock.mockReset();
+        redisEvalMock.mockResolvedValue(1);
         delete (globalThis as Record<string, unknown>)[queueCacheKey];
         delete (globalThis as Record<string, unknown>).__executionRecordsRedis__;
         delete process.env.name;
@@ -176,6 +189,8 @@ describe("job producer", () => {
             jobId: "job-1",
             ok: true,
         });
+        expect(queueGetJobMock).toHaveBeenCalledTimes(2);
+        expect(queueGetJobMock).toHaveBeenCalledWith("job-1");
         expect(queueConstructorMock).toHaveBeenCalledTimes(1);
         expect(queueConstructorMock).toHaveBeenCalledWith(
             "default",
@@ -455,7 +470,7 @@ describe("job producer", () => {
             await import("@shanjing/astro-full-stack-starter/queue/adapters/bullmq");
 
         process.env.REDIS_URL = "redis://127.0.0.1:6379/0";
-        redisMultiExecMock.mockRejectedValue(new Error("record write failed"));
+        redisEvalMock.mockRejectedValue(new Error("record write failed"));
         queueAddMock.mockResolvedValue({
             getState: async () => "completed",
             toJSON: () => ({
