@@ -35,9 +35,18 @@ const {
             async expire() {
                 return 1;
             },
+            // This fixture represents an empty, ready execution index, not a Lua emulator.
+            async eval() {
+                return 0;
+            },
             get: vi.fn(async (key: string) => store.get(key) ?? null),
             async hgetall() {
                 return {};
+            },
+            async hmget(_key: string, ...fields: string[]) {
+                return fields.map((field) =>
+                    field === "phase" ? "ready" : field === "epoch" ? "unit-empty" : null
+                );
             },
             set: vi.fn(async (key: string, value: string) => {
                 store.set(key, value);
@@ -46,6 +55,9 @@ const {
             }),
             async zrangebyscore() {
                 return [];
+            },
+            async zcount() {
+                return 0;
             },
             async zrevrange() {
                 return [];

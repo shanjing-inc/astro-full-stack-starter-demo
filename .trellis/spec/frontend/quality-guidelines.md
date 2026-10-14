@@ -29,6 +29,7 @@
 - 生产逻辑、公共契约、GraphQL schema/resolver、UI 交互、队列或持久化改动，必须有测试、命令、页面或日志证据。
 - 改 GraphQL schema 或 resolver 后必须跑 `pnpm codegen`，并确认 `src/graphql/generated/` 与代码同步。
 - 改队列 job 后必须跑 `pnpm queue:sync`，否则测试使用的清单仍是旧内容。
+- 公共 Redis job 的空库单元夹具需覆盖已准备索引的 `eval`、`hmget` 和 `zcount` 读取契约；这些夹具不模拟 Lua 或验证分页原子性，真实 Redis 行为由 starter 的隔离队列回归覆盖。
 - 迁移按 expand / deploy / contract 三步上线：更新前迁移只承载兼容变更（新增表、新增 nullable 字段、带默认值字段、索引），删除与收紧放到清理发布。部署前先 `./dist/migration/migrate.sh --dry-run`。
 - 环境变量与密钥只放本机环境文件，不提交。
 
