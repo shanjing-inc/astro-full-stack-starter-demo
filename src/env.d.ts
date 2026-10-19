@@ -20,6 +20,9 @@ declare global {
         readonly BETTER_AUTH_SECRET?: string;
         readonly DATABASE_URL?: string;
         readonly LOG_SQL?: string;
+        readonly QUEUE_EXECUTION_RECORD_COMPLETED_TTL_SECONDS?: string;
+        readonly QUEUE_EXECUTION_RECORD_FAILED_TTL_SECONDS?: string;
+        readonly QUEUE_EXECUTION_RECORD_REMOVED_TTL_SECONDS?: string;
         readonly QUEUE_EXECUTION_RECORD_TTL_SECONDS?: string;
         readonly QUEUE_JOB_RETENTION_COUNT?: string;
         readonly QUEUE_JOB_RETENTION_SECONDS?: string;
