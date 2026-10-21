@@ -2,7 +2,22 @@
 # check=skip=SecretsUsedInArgOrEnv
 ARG BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/shanjing/node:24-bookworm-slim-pnpm11.5.0-deno2.9.3-pm26.0.14
 
-FROM ${BASE_IMAGE} AS build
+FROM scratch AS node-amd64
+ADD --checksum=sha256:eb6728e77c576a35162c122c45ccadf224d89ff00abc8dae46cc2897c6002d7c https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-x64.tar.gz /node.tar.gz
+
+FROM scratch AS node-arm64
+ADD --checksum=sha256:33c37be234ba8bee041961047b19160f4d7d0f164e8e246f78bdd10feff148b3 https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-arm64.tar.gz /node.tar.gz
+
+FROM node-${TARGETARCH} AS node-runtime
+
+FROM ${BASE_IMAGE} AS base
+COPY --from=node-runtime /node.tar.gz /tmp/node.tar.gz
+RUN tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 \
+        --wildcards 'node-v24.22.1-linux-*/bin/node' \
+    && rm /tmp/node.tar.gz \
+    && test "$(node --version)" = "v24.22.1"
+
+FROM base AS build
 
 WORKDIR /app
 
@@ -105,7 +120,7 @@ RUN _SENTRY_UPLOAD_SOURCEMAPS="${SENTRY_UPLOAD_SOURCEMAPS:-$USER_SENTRY_UPLOAD_S
         rm -rf dist/sentry-sourcemaps; \
     fi
 
-FROM ${BASE_IMAGE} AS runner
+FROM base AS runner
 
 ARG USER_SENTRY_RELEASE
 ARG SENTRY_RELEASE=${USER_SENTRY_RELEASE}

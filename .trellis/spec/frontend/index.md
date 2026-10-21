@@ -58,3 +58,9 @@
 {"file": ".trellis/spec/frontend/state-management.md", "reason": "确认 URL、服务端与持久化状态边界"}
 {"file": ".trellis/spec/guides/tdd-thinking-guide.md", "reason": "从 AC 派生测试并记录 RED/GREEN 证据"}
 ```
+
+## Docker Node 安全版本
+
+`docker/Dockerfile` 按目标架构（amd64/arm64）下载 Node 24.22.1 官方发行包，以固定 SHA-256 校验，仅替换现有 Debian bookworm 基础镜像中的 Node 可执行文件；build 与 runner 共用该 base 并断言版本。Deno、pnpm、PM2 与启动入口保持。官方镜像标签为空清单时不依赖该标签。
+
+静态检查：`docker buildx build --platform linux/amd64 -f docker/Dockerfile --check .`。获准构建后分别验收 build、runner 的 `node --version` 为 `v24.22.1`，并验证 pnpm、PM2 与队列启动；静态通过不代表已构建或生产已升级。
