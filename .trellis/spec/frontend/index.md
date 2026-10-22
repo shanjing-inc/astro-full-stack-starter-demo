@@ -61,6 +61,6 @@
 
 ## Docker Node 安全版本
 
-`docker/Dockerfile` 按目标架构（amd64/arm64）下载 Node 24.22.1 官方发行包，以固定 SHA-256 校验，仅替换现有 Debian bookworm 基础镜像中的 Node 可执行文件；build 与 runner 共用该 base 并断言版本。Deno、pnpm、PM2 与启动入口保持。官方镜像标签为空清单时不依赖该标签。
+`docker/Dockerfile` 从固定多架构摘要的官方 `node:24.22.1-bookworm-slim` 和 `denoland/deno:bin-2.9.8` 复制 Node、Deno 可执行文件；build 与 runner 共用 base 并断言两种运行时版本。保留 pnpm、PM2、系统库与启动入口，支持 amd64/arm64；不再单独下载 Node 归档。旧 BASE_IMAGE 标签中的 Deno 版本不代表覆盖后的运行版本。
 
-静态检查：`docker buildx build --platform linux/amd64 -f docker/Dockerfile --check .`。获准构建后分别验收 build、runner 的 `node --version` 为 `v24.22.1`，并验证 pnpm、PM2 与队列启动；静态通过不代表已构建或生产已升级。
+静态检查：`docker buildx build --platform linux/amd64 -f docker/Dockerfile --check .`。获准构建后分别验收 build、runner 的 Node 为 `v24.22.1`、Deno 为 `2.9.8`，验证 pnpm、PM2、Web 与队列启动；Deno 证书信任更新后验收外连 HTTPS。静态通过不代表已构建或生产已升级。

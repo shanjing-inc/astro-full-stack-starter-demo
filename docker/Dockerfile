@@ -2,20 +2,14 @@
 # check=skip=SecretsUsedInArgOrEnv
 ARG BASE_IMAGE=registry.cn-hangzhou.aliyuncs.com/shanjing/node:24-bookworm-slim-pnpm11.5.0-deno2.9.3-pm26.0.14
 
-FROM scratch AS node-amd64
-ADD --checksum=sha256:eb6728e77c576a35162c122c45ccadf224d89ff00abc8dae46cc2897c6002d7c https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-x64.tar.gz /node.tar.gz
-
-FROM scratch AS node-arm64
-ADD --checksum=sha256:33c37be234ba8bee041961047b19160f4d7d0f164e8e246f78bdd10feff148b3 https://nodejs.org/dist/v24.22.1/node-v24.22.1-linux-arm64.tar.gz /node.tar.gz
-
-FROM node-${TARGETARCH} AS node-runtime
+FROM node:24.22.1-bookworm-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS node-runtime
+FROM denoland/deno:bin-2.9.8@sha256:b507583d3c68ba69f3ed2ce5969ae5b8b70f43421c781279c7aea06435263543 AS deno-runtime
 
 FROM ${BASE_IMAGE} AS base
-COPY --from=node-runtime /node.tar.gz /tmp/node.tar.gz
-RUN tar -xzf /tmp/node.tar.gz -C /usr/local --strip-components=1 \
-        --wildcards 'node-v24.22.1-linux-*/bin/node' \
-    && rm /tmp/node.tar.gz \
-    && test "$(node --version)" = "v24.22.1"
+COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=deno-runtime /deno /usr/local/bin/deno
+RUN test "$(node --version)" = "v24.22.1" \
+    && deno --version | grep -q '^deno 2\.9\.8 '
 
 FROM base AS build
 
